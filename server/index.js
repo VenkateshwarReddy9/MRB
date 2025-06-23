@@ -20,8 +20,6 @@ const {
 
 const db = require('./database.js');
 
-const admin = require('firebase-admin');
-
 const firebaseCert = {
   projectId: process.env.FIREBASE_PROJECT_ID,
   clientEmail: process.env.FIREBASE_CLIENT_EMAIL,
