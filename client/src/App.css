@@ -1,0 +1,11 @@
+/*
+  We keep this file for any future global styles or specific overrides,
+  but we have removed the default Vite boilerplate that was interfering
+  with our Tailwind CSS layout. The main styling is now handled by the
+  @tailwind directives in index.css and the utility classes in our JSX files.
+*/
+
+body {
+  /* This ensures a consistent default text color that works well with our dark theme. */
+  color: rgba(255, 255, 255, 0.87);
+}

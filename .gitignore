@@ -1,0 +1,133 @@
+# Dependencies
+/node_modules
+/client/node_modules
+/.pnp
+.pnp.js
+
+# Build output
+/client/dist
+/client/build
+/build
+/dist
+
+# Production builds
+/server/build
+/server/dist
+
+# Logs
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+
+# Runtime data
+pids
+*.pid
+*.seed
+*.pid.lock
+
+# Local development database file
+/server/ledger.db
+*.db
+*.sqlite
+*.sqlite3
+
+# Environment variables - VERY IMPORTANT
+# These files contain secret keys and should NEVER be shared
+/server/.env
+/server/.env.local
+/server/.env.production
+/server/.env.development
+/client/.env
+/client/.env.local
+/client/.env.production
+/client/.env.development
+.env*
+
+# Firebase service account key - CRITICAL
+/server/serviceAccountKey.json
+/server/firebase-config.json
+*.json
+
+# Deployment configuration (if contains secrets)
+render.yaml
+vercel.json
+
+# Coverage directory used by tools like istanbul
+coverage
+*.lcov
+
+# nyc test coverage
+.nyc_output
+
+# IDE config
+.idea
+.vscode
+*.swp
+*.swo
+
+# OS generated files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# Optional npm cache directory
+.npm
+
+# Optional REPL history
+.node_repl_history
+
+# Output of 'npm pack'
+*.tgz
+
+# Yarn Integrity file
+.yarn-integrity
+
+# dotenv environment variables file (backup)
+.env.backup
+
+# Stores VSCode versions used for testing VSCode extensions
+.vscode-test
+
+# Temporary folders
+tmp/
+temp/
+
+# Uploads directory (if contains sensitive files)
+/uploads
+/server/uploads
+
+# Cache files
+.cache
+.parcel-cache
+
+# Next.js build output (if using Next.js)
+.next
+
+# Nuxt.js build / generate output (if using Nuxt.js)
+.nuxt
+
+# Gatsby files (if using Gatsby)
+.cache/
+public
+
+# Serverless directories
+.serverless/
+
+# FuseBox cache
+.fusebox/
+
+# DynamoDB Local files
+.dynamodb/
+
+# TernJS port file
+.tern-port
+
+# Lock files (optional - include if you want to standardize package versions)
+package-lock.json
+yarn.lock
