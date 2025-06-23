@@ -141,15 +141,24 @@ const performanceMiddleware = (req, res, next) => {
     res.end = function(...args) {
         const endTime = Date.now();
         const responseTime = endTime - startTime;
-        
         console.log(`${req.method} ${req.path} - ${responseTime}ms`);
-        res.set('X-Response-Time', `${responseTime}ms`);
         
+        // FIXED: Set headers BEFORE calling originalEnd
+        try {
+            if (!res.headersSent) {
+                res.set('X-Response-Time', `${responseTime}ms`);
+            }
+        } catch (err) {
+            // Ignore header setting errors in production
+            console.warn('Could not set response time header:', err.message);
+        }
+        
+        // Call original end function
         originalEnd.apply(this, args);
     };
-    
     next();
 };
+
 
 app.use(performanceMiddleware);
 app.use(helmet({
