@@ -4,8 +4,7 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { auth } from '../firebase';
 import { format, addDays, subDays, startOfWeek, isWithinInterval, parse, addMinutes } from 'date-fns';
 
-const API_URL = 'http://localhost:5000';
-
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
 // --- Reusable Modal Component ---
 const Modal = ({ children, onClose }) => (
   <div className="fixed inset-0 bg-black bg-opacity-70 z-40 flex justify-center items-center" onClick={onClose}>

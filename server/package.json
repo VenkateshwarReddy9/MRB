@@ -11,7 +11,11 @@
     "node": ">=18.0.0",
     "npm": ">=8.0.0"
   },
-  "keywords": ["back-office", "restaurant-management", "api"],
+  "keywords": [
+    "back-office",
+    "restaurant-management",
+    "api"
+  ],
   "author": "",
   "license": "ISC",
   "description": "Back Office Management System API",
