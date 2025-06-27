@@ -2633,28 +2633,17 @@ app.get('/api/reports/labor-efficiency', authMiddleware, async (req, res) => {
 });
 
 
-// NEW: Export labor vs sales report as CSV
 app.get('/api/reports/labor-vs-sales/export', authMiddleware, async (req, res) => {
     try {
         const { start_date, end_date, format = 'csv' } = req.query;
         
         if (!start_date || !end_date) {
-            return res.status(400).json({ 
-                error: "start_date and end_date are required" 
-            });
+            return res.status(400).json({ error: "start_date and end_date are required" });
         }
 
-        // Reuse the main report logic but format for export
-        const reportResponse = await fetch(`${req.protocol}://${req.get('host')}/api/reports/labor-vs-sales?start_date=${start_date}&end_date=${end_date}`, {
-            headers: { 'Authorization': req.headers.authorization }
-        });
-        
-        if (!reportResponse.ok) {
-            throw new Error('Failed to generate report data');
-        }
-        
-        const reportData = await reportResponse.json();
-        
+        // Call your report logic as a function
+        const reportData = await generateLaborVsSalesReport(start_date, end_date, req.user);
+
         if (format === 'csv') {
             const csvHeaders = 'Date,Sales,Expenses,Labor Hours,Labor Cost,Labor Cost %,Sales per Hour,Cost per Hour\n';
             const csvRows = reportData.data.map(row => 
@@ -2673,6 +2662,7 @@ app.get('/api/reports/labor-vs-sales/export', authMiddleware, async (req, res) =
         res.status(500).json({ error: "Failed to export report." });
     }
 });
+
 
 // DEBUG: Check transactions table schema
 app.get('/api/debug/transactions-schema', adminOnly, async (req, res) => {
