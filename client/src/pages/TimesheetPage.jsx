@@ -4,6 +4,8 @@ import React, { useState, useEffect } from 'react';
 import { auth } from '../firebase';
 import { format, subDays, startOfWeek } from 'date-fns';
 
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
+
 const TimesheetPage = () => {
     // Default to showing the report for the last 7 days
     const [endDate, setEndDate] = useState(new Date());

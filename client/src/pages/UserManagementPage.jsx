@@ -2,6 +2,8 @@
 import React, { useState, useEffect } from 'react';
 import { auth } from '../firebase';
 
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
+
 const UserManagementPage = ({ userProfile }) => {
     const [users, setUsers] = useState([]);
     const [email, setEmail] = useState('');
@@ -19,7 +21,7 @@ const UserManagementPage = ({ userProfile }) => {
             setLoading(true);
             try {
                 const token = await auth.currentUser.getIdToken();
-                const response = await fetch('${API_URL}/api/users', {
+                const response = await fetch(`${API_URL}/api/users`, {
                     headers: { 
         'Authorization': `Bearer ${token}`,
         'Content-Type': 'application/json'
@@ -48,7 +50,7 @@ const UserManagementPage = ({ userProfile }) => {
         
         try {
             const token = await auth.currentUser.getIdToken();
-            const response = await fetch('${API_URL}:5000/api/users', {
+            const response = await fetch(`${API_URL}/api/users`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
                 body: JSON.stringify({ email, password, role })

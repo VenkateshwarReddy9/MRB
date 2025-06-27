@@ -3,6 +3,8 @@
 import React, { useState, useEffect } from 'react';
 import { auth } from '../firebase';
 
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
+
 const ActivityLogPage = () => {
     const [logs, setLogs] = useState([]);
     const [loading, setLoading] = useState(true);
@@ -18,7 +20,7 @@ const ActivityLogPage = () => {
             }
             try {
                 const token = await auth.currentUser.getIdToken();
-                const response = await fetch('${API_URL}/api/activity-logs', {
+                const response = await fetch(`${API_URL}/api/activity-logs`, {
                     headers: { 
         'Authorization': `Bearer ${token}`,
         'Content-Type': 'application/json'

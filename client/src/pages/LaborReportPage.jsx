@@ -4,6 +4,7 @@ import React, { useState, useEffect } from 'react';
 import { auth } from '../firebase';
 import { format, subDays, startOfWeek, endOfWeek } from 'date-fns';
 
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
 const LaborReportPage = () => {
     const [reportData, setReportData] = useState([]);
     const [summary, setSummary] = useState({});
@@ -22,7 +23,7 @@ const LaborReportPage = () => {
         
         try {
             const token = await auth.currentUser.getIdToken();
-            let url = '${API_URL}/api/reports/labor-vs-sales';
+            let url = `${API_URL}/api/reports/labor-vs-sales`;
             
             
             if (viewMode === 'daily') {
@@ -71,7 +72,7 @@ const LaborReportPage = () => {
     const handleExport = async () => {
         try {
             const token = await auth.currentUser.getIdToken();
-            const url = `${API_URL}/api/reports/labor-vs-sales/export?start_date=${dateRange.start_date}&end_date=${dateRange.end_date}&format=csv`;
+           const url = `${API_URL}/api/reports/labor-vs-sales/export?start_date=${dateRange.start_date}&end_date=${dateRange.end_date}&format=csv`;
             
             const response = await fetch(url, {
                 headers: { 
