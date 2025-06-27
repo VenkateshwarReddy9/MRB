@@ -12,7 +12,7 @@ export const useRealTimeAnalytics = () => {
     const [error, setError] = useState(null);
 
     useEffect(() => {
-        const socket = io(import.meta.env.VITE_API_URL || 'http://localhost:5000');
+        const socket = io(import.meta.env.VITE_API_URL  );
 
         socket.on('connect', () => {
             console.log('📡 Connected to real-time analytics');
