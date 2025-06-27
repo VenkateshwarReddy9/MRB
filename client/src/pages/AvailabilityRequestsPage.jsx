@@ -2,6 +2,8 @@
 import React, { useState, useEffect } from 'react';
 import { auth } from '../firebase';
 
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
+
 const AvailabilityRequestsPage = () => {
     const [requests, setRequests] = useState([]);
     const [loading, setLoading] = useState(true);
@@ -13,7 +15,7 @@ const AvailabilityRequestsPage = () => {
         setLoading(true);
         const token = await auth.currentUser.getIdToken();
         try {
-            const response = await fetch('${API_URL}/api/availability/pending', {
+            const response = await fetch(`${API_URL}/api/availability/pending`, {
                 headers: { 
         'Authorization': `Bearer ${token}`,
         'Content-Type': 'application/json'

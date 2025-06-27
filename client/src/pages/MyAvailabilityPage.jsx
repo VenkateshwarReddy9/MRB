@@ -3,6 +3,8 @@
 import React, { useState, useEffect } from 'react';
 import { auth } from '../firebase';
 
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
+
 const MyAvailabilityPage = () => {
     const [availability, setAvailability] = useState([]);
     const [reason, setReason] = useState('');
@@ -53,7 +55,7 @@ const MyAvailabilityPage = () => {
         setSubmitting(true);
         try {
             const token = await user.getIdToken();
-            const response = await fetch('${API_URL}/api/availability', {
+            const response = await fetch(`${API_URL}/api/availability`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
                 body: JSON.stringify({ start_time: startTime, end_time: endTime, reason })
