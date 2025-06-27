@@ -444,6 +444,125 @@ const validateShiftTemplate = (req, res, next) => {
     next();
 };
 
+// Add this shared function for generating labor vs sales reports
+const generateLaborVsSalesReport = async (startDate, endDate) => {
+    try {
+        // Sales data query
+        const salesQuery = `
+            SELECT 
+                DATE(transaction_date) as report_date,
+                SUM(CASE WHEN type = 'sale' THEN amount ELSE 0 END) as daily_sales,
+                SUM(CASE WHEN type = 'expense' THEN amount ELSE 0 END) as daily_expenses,
+                COUNT(CASE WHEN type = 'sale' THEN 1 END) as sale_count
+            FROM transactions 
+            WHERE DATE(transaction_date) BETWEEN $1 AND $2 
+                AND status = 'approved'
+            GROUP BY DATE(transaction_date)
+            ORDER BY DATE(transaction_date)
+        `;
+
+        // Labor data query
+        const laborQuery = `
+            SELECT 
+                DATE(te.clock_in_timestamp) as report_date,
+                COUNT(DISTINCT te.user_uid) as employees_worked,
+                COALESCE(SUM(
+                    CASE 
+                        WHEN te.clock_out_time IS NOT NULL THEN
+                            EXTRACT(EPOCH FROM (te.clock_out_time - te.clock_in_timestamp))/3600 -
+                            COALESCE(
+                                CASE 
+                                    WHEN te.break_start_time IS NOT NULL AND te.break_end_time IS NOT NULL THEN
+                                        EXTRACT(EPOCH FROM (te.break_end_time - te.break_start_time))/3600
+                                    ELSE 0
+                                END, 0
+                            )
+                        ELSE 0
+                    END
+                ), 0) as total_hours,
+                COALESCE(SUM(
+                    CASE 
+                        WHEN te.clock_out_time IS NOT NULL THEN
+                            (EXTRACT(EPOCH FROM (te.clock_out_time - te.clock_in_timestamp))/3600 -
+                            COALESCE(
+                                CASE 
+                                    WHEN te.break_start_time IS NOT NULL AND te.break_end_time IS NOT NULL THEN
+                                        EXTRACT(EPOCH FROM (te.break_end_time - te.break_start_time))/3600
+                                    ELSE 0
+                                END, 0
+                            )) * COALESCE(e.pay_rate, 0)
+                        ELSE 0
+                    END
+                ), 0) as total_labor_cost
+            FROM time_entries te
+            LEFT JOIN employees e ON te.user_uid = e.uid
+            WHERE DATE(te.clock_in_timestamp) BETWEEN $1 AND $2
+                AND te.clock_out_time IS NOT NULL
+            GROUP BY DATE(te.clock_in_timestamp)
+            ORDER BY DATE(te.clock_in_timestamp)
+        `;
+
+        // Execute both queries
+        const [salesResult, laborResult] = await Promise.all([
+            db.query(salesQuery, [startDate, endDate]),
+            db.query(laborQuery, [startDate, endDate])
+        ]);
+
+        const salesData = salesResult.rows;
+        const laborData = laborResult.rows;
+
+        // Create maps for easier lookup
+        const laborMap = new Map();
+        laborData.forEach(row => {
+            laborMap.set(row.report_date.toISOString().split('T')[0], row);
+        });
+
+        const salesMap = new Map();
+        salesData.forEach(row => {
+            salesMap.set(row.report_date.toISOString().split('T')[0], row);
+        });
+
+        // Generate date range
+        const dateRange = [];
+        const currentDate = new Date(startDate);
+        const endDateObj = new Date(endDate);
+
+        while (currentDate <= endDateObj) {
+            dateRange.push(currentDate.toISOString().split('T')[0]);
+            currentDate.setDate(currentDate.getDate() + 1);
+        }
+
+        // Combine data
+        const combinedData = dateRange.map(date => {
+            const sales = salesMap.get(date) || { daily_sales: 0, daily_expenses: 0, sale_count: 0 };
+            const labor = laborMap.get(date) || { employees_worked: 0, total_hours: 0, total_labor_cost: 0 };
+
+            const dailySales = parseFloat(sales.daily_sales) || 0;
+            const laborCost = parseFloat(labor.total_labor_cost) || 0;
+            const laborHours = parseFloat(labor.total_hours) || 0;
+
+            return {
+                date: date,
+                sales: dailySales,
+                expenses: parseFloat(sales.daily_expenses) || 0,
+                sale_count: parseInt(sales.sale_count) || 0,
+                employees_worked: parseInt(labor.employees_worked) || 0,
+                labor_hours: laborHours,
+                labor_cost: laborCost,
+                labor_cost_percentage: dailySales > 0 ? ((laborCost / dailySales) * 100) : 0,
+                sales_per_hour: laborHours > 0 ? (dailySales / laborHours) : 0,
+                cost_per_hour: laborHours > 0 ? (laborCost / laborHours) : 0
+            };
+        });
+
+        return combinedData;
+    } catch (error) {
+        console.error('Error generating labor vs sales report:', error);
+        throw error;
+    }
+};
+
+
 // Error handling middleware
 app.use((err, req, res, next) => {
     console.error('Error:', err);
@@ -2633,128 +2752,36 @@ app.get('/api/reports/labor-efficiency', authMiddleware, async (req, res) => {
 });
 
 
-// Add this route to your backend
-app.get('/api/reports/timesheet/export', authMiddleware, async (req, res) => {
+app.get('/api/reports/labor-vs-sales/export', authMiddleware, async (req, res) => {
     try {
         const { start_date, end_date, format = 'csv' } = req.query;
         
         if (!start_date || !end_date) {
-            return res.status(400).json({ 
-                error: "start_date and end_date are required" 
-            });
+            return res.status(400).json({ error: "start_date and end_date are required" });
         }
 
-        console.log(`Generating timesheet export for ${start_date} to ${end_date}`);
-
-        // Query to get timesheet data
-        const timesheetQuery = `
-            SELECT 
-                e.uid,
-                e.full_name,
-                e.email,
-                e.pay_rate,
-                COALESCE(SUM(
-                    CASE 
-                        WHEN te.clock_out_time IS NOT NULL THEN
-                            EXTRACT(EPOCH FROM (te.clock_out_time - te.clock_in_timestamp))/3600 -
-                            COALESCE(
-                                CASE 
-                                    WHEN te.break_start_time IS NOT NULL AND te.break_end_time IS NOT NULL THEN
-                                        EXTRACT(EPOCH FROM (te.break_end_time - te.break_start_time))/3600
-                                    ELSE 0
-                                END, 0
-                            )
-                        ELSE 0
-                    END
-                ), 0) as total_hours,
-                COALESCE(SUM(
-                    CASE 
-                        WHEN te.clock_out_time IS NOT NULL THEN
-                            (EXTRACT(EPOCH FROM (te.clock_out_time - te.clock_in_timestamp))/3600 -
-                            COALESCE(
-                                CASE 
-                                    WHEN te.break_start_time IS NOT NULL AND te.break_end_time IS NOT NULL THEN
-                                        EXTRACT(EPOCH FROM (te.break_end_time - te.break_start_time))/3600
-                                    ELSE 0
-                                END, 0
-                            )) * COALESCE(e.pay_rate, 0)
-                        ELSE 0
-                    END
-                ), 0) as total_pay
-            FROM employees e
-            LEFT JOIN time_entries te ON e.uid = te.user_uid 
-                AND DATE(te.clock_in_timestamp) BETWEEN $1 AND $2
-                AND te.clock_out_time IS NOT NULL
-            GROUP BY e.uid, e.full_name, e.email, e.pay_rate
-            HAVING COALESCE(SUM(
-                CASE 
-                    WHEN te.clock_out_time IS NOT NULL THEN
-                        EXTRACT(EPOCH FROM (te.clock_out_time - te.clock_in_timestamp))/3600 -
-                        COALESCE(
-                            CASE 
-                                WHEN te.break_start_time IS NOT NULL AND te.break_end_time IS NOT NULL THEN
-                                    EXTRACT(EPOCH FROM (te.break_end_time - te.break_start_time))/3600
-                                ELSE 0
-                            END, 0
-                        )
-                    ELSE 0
-                END
-            ), 0) > 0
-            ORDER BY e.full_name
-        `;
-
-        const result = await db.query(timesheetQuery, [start_date, end_date]);
-        const timesheetData = result.rows;
-
+        // Call function directly instead of fetch
+        const reportData = await generateLaborVsSalesReport(start_date, end_date);
+        
         if (format === 'csv') {
-            // Generate CSV content
-            const csvHeaders = [
-                'Employee Name',
-                'Email',
-                'Pay Rate (£/hr)',
-                'Total Hours',
-                'Total Pay (£)'
-            ];
+            const csvHeaders = 'Date,Sales,Expenses,Labor Hours,Labor Cost,Labor Cost %,Sales per Hour,Cost per Hour\n';
+            const csvRows = reportData.map(row => 
+                `${row.date},${row.sales.toFixed(2)},${row.expenses.toFixed(2)},${row.labor_hours.toFixed(2)},${row.labor_cost.toFixed(2)},${row.labor_cost_percentage.toFixed(2)},${row.sales_per_hour.toFixed(2)},${row.cost_per_hour.toFixed(2)}`
+            ).join('\n');
+            const csvContent = csvHeaders + csvRows;
 
-            const csvRows = timesheetData.map(row => [
-                row.full_name || 'Name not set',
-                row.email,
-                parseFloat(row.pay_rate || 0).toFixed(2),
-                parseFloat(row.total_hours).toFixed(2),
-                parseFloat(row.total_pay).toFixed(2)
-            ]);
-
-            const csvContent = [
-                csvHeaders.join(','),
-                ...csvRows.map(row => row.join(','))
-            ].join('\n');
-
-            // Set headers for CSV download
             res.setHeader('Content-Type', 'text/csv');
-            res.setHeader('Content-Disposition', `attachment; filename="timesheet_${start_date}_to_${end_date}.csv"`);
-            
-            // Send CSV content
+            res.setHeader('Content-Disposition', `attachment; filename="labor_vs_sales_${start_date}_to_${end_date}.csv"`);
             res.send(csvContent);
-
-            console.log(`✅ Timesheet CSV export generated successfully for ${start_date} to ${end_date}`);
-
         } else {
-            // Return JSON data
-            res.json({
-                success: true,
-                data: timesheetData,
-                period: { start_date, end_date }
-            });
+            res.json({ success: true, data: reportData });
         }
-
-    } catch (error) {
-        console.error('❌ Timesheet export error:', error);
-        res.status(500).json({ 
-            error: 'Failed to generate timesheet export',
-            details: process.env.NODE_ENV === 'development' ? error.message : undefined
-        });
+    } catch (err) {
+        console.error("Error exporting labor vs sales report:", err);
+        res.status(500).json({ error: "Failed to export report." });
     }
 });
+
 
 
 // DEBUG: Check transactions table schema
