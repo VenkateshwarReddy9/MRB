@@ -43,7 +43,7 @@ const server = createServer(app);
 // Initialize Socket.IO with CORS configuration
 const io = new Server(server, {
     cors: {
-        origin: process.env.CORS_ORIGIN ? process.env.CORS_ORIGIN.split(',') : ['http://localhost:5173'],
+        origin: process.env.CORS_ORIGIN ? process.env.CORS_ORIGIN.split(',') : ['https://df39ac78.mrb-6gc.pages.dev/'],
         methods: ['GET', 'POST'],
         credentials: true
     }
