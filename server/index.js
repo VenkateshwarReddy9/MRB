@@ -40,23 +40,23 @@ const PORT = process.env.PORT || 5000;
 // Create HTTP server for WebSocket support
 const server = createServer(app);
 
-const cors = require('cors');
-
-// Express CORS configuration (THIS IS WHAT YOU NEED TO FIX)
-// (Removed duplicate corsOptions declaration and usage here. The corsOptions defined later will be used instead.)
-
-// Socket.IO CORS (separate configuration)
+// Initialize Socket.IO with CORS configuration
 const io = new Server(server, {
     cors: {
         origin: [
+            'https://mrb-git-main-venkateshwarreddy9s-projects.vercel.app/',
             'http://localhost:5173',
             'http://localhost:3000',
-            'https://mrb-git-main-venkateshwarreddy9s-projects.vercel.app', // ✅ No trailing slash
-            'https://mrb-6gc.pages.dev'
+            'https://mrb-6gc.pages.dev',           // Your main domain
+            'https://1f7b3935.mrb-6gc.pages.dev', // Your current deployment URL
+            'https://*.mrb-6gc.pages.dev'          // Wildcard for all preview deployments
         ],
         credentials: true,
-        methods: ['GET', 'POST']
-    }
+        methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+        allowedHeaders: ['Content-Type', 'Authorization'],
+        optionsSuccessStatus: 200
+    },
+    allowEIO3: true // Optional: for compatibility with older clients
 });
 
 // File upload configuration
