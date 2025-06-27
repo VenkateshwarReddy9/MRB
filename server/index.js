@@ -170,7 +170,7 @@ if (process.env.NODE_ENV === 'production') {
 }
 
 const corsOptions = {
-    origin: process.env.CORS_ORIGIN ? process.env.CORS_ORIGIN.split(',') : ['http://localhost:5173'],
+    origin: process.env.CORS_ORIGIN ? process.env.CORS_ORIGIN.split(',') : ['https://mrb-6gc.pages.dev'],
     credentials: true,
     optionsSuccessStatus: 200
 };
