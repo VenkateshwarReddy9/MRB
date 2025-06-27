@@ -44,6 +44,7 @@ const server = createServer(app);
 const io = new Server(server, {
     cors: {
         origin: [
+            'https://mrb-zeta.vercel.app/',
             'http://localhost:5173',
             'http://localhost:3000',
             'https://mrb-6gc.pages.dev',           // Your main domain
