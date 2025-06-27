@@ -26,7 +26,10 @@ const EditEmployeePage = () => {
       try {
         const token    = await user.getIdToken();
         const response = await fetch(`${API_URL}/api/employees/${uid}`, {
-          headers: { Authorization: `Bearer ${token}` }
+          headers: { 
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json'
+    }
         });
 
         if (response.status === 404) {

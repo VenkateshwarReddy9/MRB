@@ -19,7 +19,10 @@ const ActivityLogPage = () => {
             try {
                 const token = await auth.currentUser.getIdToken();
                 const response = await fetch('${API_URL}/api/activity-logs', {
-                    headers: { 'Authorization': `Bearer ${token}` }
+                    headers: { 
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json'
+    }
                 });
                 if (!response.ok) throw new Error('Could not fetch activity logs.');
                 const data = await response.json();

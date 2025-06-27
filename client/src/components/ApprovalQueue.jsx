@@ -14,7 +14,10 @@ const ApprovalQueue = ({ onActionComplete }) => {
         const token = await auth.currentUser.getIdToken();
         try {
                         const response = await fetch(`${API_URL}/api/approval-requests`, {
-                headers: { 'Authorization': `Bearer ${token}` }
+                headers: { 
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json'
+    }
             });
             const data = await response.json();
             if (response.ok) {
@@ -49,7 +52,10 @@ const ApprovalQueue = ({ onActionComplete }) => {
         try {
             const response = await fetch(`${API_URL}/api/transactions/${transactionId}/${action}`, {
                 method: 'POST',
-                headers: { 'Authorization': `Bearer ${token}` }
+               headers: { 
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json'
+    }
             });
 
             if (response.ok) {

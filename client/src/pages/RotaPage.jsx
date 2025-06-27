@@ -111,7 +111,10 @@ const RotaPage = () => {
 
     return fetch(`${API_URL}${url}`, {
       ...options,
-      headers: { ...defaultHeaders, ...options.headers }
+      headers: { 
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json'
+    }
     });
   };
 

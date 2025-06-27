@@ -18,7 +18,10 @@ const ShiftTemplatesPage = () => {
         const token = await auth.currentUser.getIdToken();
         try {
             const response = await fetch('${API_URL}/api/shift-templates', {
-                headers: { 'Authorization': `Bearer ${token}` }
+                headers: { 
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json'
+    }
             });
             const data = await response.json();
             if (response.ok) {
@@ -86,7 +89,10 @@ const ShiftTemplatesPage = () => {
         try {
             const response = await fetch(`${API_URL}/api/shift-templates/${templateId}`, {
                 method: 'DELETE',
-                headers: { 'Authorization': `Bearer ${token}` }
+                headers: { 
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json'
+    }
             });
             if (!response.ok) throw new Error('Failed to delete template.');
             setTemplates(templates.filter(t => t.id !== templateId));

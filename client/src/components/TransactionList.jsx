@@ -17,7 +17,10 @@ const TransactionList = ({ title, transactions, userProfile, onEdit, onActionCom
             const token = await user.getIdToken();
             const response = await fetch(`${API_URL}/${transactionId}/request-delete`, {
                 method: 'POST',
-                headers: { 'Authorization': `Bearer ${token}` }
+                headers: { 
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json'
+    }
             });
             const data = await response.json();
 

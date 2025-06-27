@@ -92,7 +92,10 @@ const TimeClock = () => {
         try {
             const token = await auth.currentUser.getIdToken();
             const response = await fetch('${API_URL}/api/time-clock/status', {
-                headers: { 'Authorization': `Bearer ${token}` }
+                headers: { 
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json'
+    }
             });
             
             if (!response.ok) {

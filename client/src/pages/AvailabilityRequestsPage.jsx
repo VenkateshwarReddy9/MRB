@@ -14,7 +14,10 @@ const AvailabilityRequestsPage = () => {
         const token = await auth.currentUser.getIdToken();
         try {
             const response = await fetch('${API_URL}/api/availability/pending', {
-                headers: { 'Authorization': `Bearer ${token}` }
+                headers: { 
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json'
+    }
             });
             if (!response.ok) throw new Error('Failed to fetch pending requests.');
             const data = await response.json();
@@ -42,7 +45,10 @@ const AvailabilityRequestsPage = () => {
         try {
             const response = await fetch(`${API_URL}/api/availability/${requestId}/${action}`, {
                 method: 'POST',
-                headers: { 'Authorization': `Bearer ${token}` }
+                headers: { 
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json'
+    }
             });
             if (response.ok) {
                 // On success, remove the item from the list in the UI

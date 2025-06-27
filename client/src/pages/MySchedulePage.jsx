@@ -20,7 +20,10 @@ const MySchedulePage = () => {
             const token = await user.getIdToken();
             try {
                 const response = await fetch(`${API_URL}/api/my-schedule?start_date=${format(startDate, 'yyyy-MM-dd')}&end_date=${format(endDate, 'yyyy-MM-dd')}`, {
-                    headers: { 'Authorization': `Bearer ${token}` }
+                    headers: { 
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json'
+    }
                 });
                 if (!response.ok) throw new Error('Could not fetch schedule.');
                 const data = await response.json();

@@ -56,7 +56,7 @@ import ErrorBoundary from './components/ErrorBoundary';
 import './App.css';
 
 // Environment-based API configuration
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
+const API_BASE_URL = import.meta.env.VITE_API_URL ;
 
 // Helper function for greetings
 const getGreeting = () => {

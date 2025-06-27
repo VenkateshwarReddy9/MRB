@@ -20,7 +20,10 @@ const UserManagementPage = ({ userProfile }) => {
             try {
                 const token = await auth.currentUser.getIdToken();
                 const response = await fetch('${API_URL}/api/users', {
-                    headers: { 'Authorization': `Bearer ${token}` }
+                    headers: { 
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json'
+    }
                 });
                 const data = await response.json();
                 if (response.ok) {

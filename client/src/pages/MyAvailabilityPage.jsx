@@ -21,7 +21,10 @@ const MyAvailabilityPage = () => {
         const token = await user.getIdToken();
         try {
             const response = await fetch(`${API_URL}/api/availability?user_uid=${user.uid}`, {
-                headers: { 'Authorization': `Bearer ${token}` }
+                headers: { 
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json'
+    }
             });
             if (!response.ok) throw new Error('Failed to fetch availability.');
             const data = await response.json();
@@ -76,7 +79,10 @@ const MyAvailabilityPage = () => {
         try {
             const response = await fetch(`${API_URL}/api/availability/${availabilityId}`, {
                 method: 'DELETE',
-                headers: { 'Authorization': `Bearer ${token}` }
+                headers: { 
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json'
+    }
             });
             if (!response.ok) throw new Error('Failed to delete request.');
             fetchAvailability(); // Refresh list on success

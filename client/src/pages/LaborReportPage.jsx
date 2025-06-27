@@ -24,6 +24,7 @@ const LaborReportPage = () => {
             const token = await auth.currentUser.getIdToken();
             let url = '${API_URL}/api/reports/labor-vs-sales';
             
+            
             if (viewMode === 'daily') {
                 url += `?start_date=${dateRange.start_date}&end_date=${dateRange.end_date}`;
             } else {
@@ -73,7 +74,10 @@ const LaborReportPage = () => {
             const url = `${API_URL}/api/reports/labor-vs-sales/export?start_date=${dateRange.start_date}&end_date=${dateRange.end_date}&format=csv`;
             
             const response = await fetch(url, {
-                headers: { 'Authorization': `Bearer ${token}` }
+                headers: { 
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json'
+    }
             });
             
             if (response.ok) {

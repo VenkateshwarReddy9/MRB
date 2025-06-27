@@ -17,7 +17,10 @@ const EmployeesPage = () => {
     try {
       const token    = await user.getIdToken();
       const response = await fetch('${API_URL}/api/employees', {
-        headers: { 'Authorization': `Bearer ${token}` }
+        headers: { 
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json'
+    }
       });
       if (!response.ok) {
         throw new Error('Unable to load employees. Ensure you have admin access.');
