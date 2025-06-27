@@ -4030,19 +4030,30 @@ app.use('*catchall', (req, res) => {
 
 const startServer = async () => {
     try {
+        // Test database connection
         await db.query('SELECT NOW()');
         console.log('✅ Database connection established');
         
-        server.listen(PORT, () => {
+        // Start server
+        server.listen(PORT, '0.0.0.0', () => {
+            const isProduction = process.env.NODE_ENV === 'production';
+            const baseUrl = isProduction 
+                ? `https://${process.env.RENDER_EXTERNAL_HOSTNAME || 'your-app'}.onrender.com`
+                : `http://localhost:${PORT}`;
+            
             console.log('🚀 Server started successfully!');
             console.log(`📍 Server running on port ${PORT}`);
             console.log(`🌍 Environment: ${process.env.NODE_ENV || 'development'}`);
-            console.log(`📊 Health check: http://localhost:${PORT}/health`);
-            console.log(`🔐 API base URL: http://localhost:${PORT}/api`);
+            console.log(`📊 Health check: ${baseUrl}/health`);
+            console.log(`🔐 API base URL: ${baseUrl}/api`);
             console.log(`🔄 Real-time analytics enabled`);
             console.log(`📁 File uploads: /uploads directory`);
             console.log(`🔔 Real-time notifications enabled`);
             console.log('⏰ Server started at:', new Date().toISOString());
+            
+            if (isProduction) {
+                console.log('🌐 Production deployment ready!');
+            }
         });
     } catch (error) {
         console.error('❌ Failed to start server:', error);
@@ -4050,53 +4061,47 @@ const startServer = async () => {
     }
 };
 
-// Enhanced error handling to prevent server crashes
+// SINGLE comprehensive error handling middleware
 app.use((err, req, res, next) => {
     console.error('❌ Server Error:', {
         error: err.message,
-        stack: err.stack,
+        stack: process.env.NODE_ENV === 'development' ? err.stack : undefined,
         url: req.url,
         method: req.method,
-        user: req.user?.uid || 'anonymous'
+        user: req.user?.uid || 'anonymous',
+        timestamp: new Date().toISOString()
     });
     
+    // Don't send stack traces in production
     const message = process.env.NODE_ENV === 'production'
         ? 'Internal server error'
         : err.message;
         
-    res.status(err.status || 500).json({
-        error: message,
-        ...(process.env.NODE_ENV === 'development' && { 
-            stack: err.stack,
-            details: err.code || 'Unknown error code'
-        })
-    });
+    // Prevent sending response if headers already sent
+    if (!res.headersSent) {
+        res.status(err.status || 500).json({
+            error: message,
+            ...(process.env.NODE_ENV === 'development' && { 
+                stack: err.stack,
+                details: err.code || 'Unknown error code'
+            })
+        });
+    }
 });
 
-
-// Add at the end of your routes
-app.use((err, req, res, next) => {
-  console.error('Unhandled error:', err.stack);
-  res.status(500).json({ error: 'Internal server error' });
-});
-
-process.on('unhandledRejection', (reason, promise) => {
-  console.error('Unhandled Rejection at:', promise, 'reason:', reason);
-});
-
-process.on('uncaughtException', (err) => {
-  console.error('Uncaught Exception:', err.stack);
-  process.exit(1);
-});
-
-
-startServer();
-
-// Graceful shutdown
+// Graceful shutdown handler
 const gracefulShutdown = (signal) => {
     console.log(`\n📡 Received ${signal}. Starting graceful shutdown...`);
     
-    if (db.pool) {
+    // Close server
+    if (server) {
+        server.close(() => {
+            console.log('🔌 HTTP server closed');
+        });
+    }
+    
+    // Close database connections
+    if (db && db.pool) {
         db.pool.end(() => {
             console.log('🔌 Database connections closed');
         });
@@ -4106,18 +4111,30 @@ const gracefulShutdown = (signal) => {
     process.exit(0);
 };
 
+// SINGLE set of process event listeners
 process.on('SIGTERM', () => gracefulShutdown('SIGTERM'));
 process.on('SIGINT', () => gracefulShutdown('SIGINT'));
 
 process.on('uncaughtException', (error) => {
-    console.error('💥 Uncaught Exception:', error);
+    console.error('💥 Uncaught Exception:', {
+        error: error.message,
+        stack: error.stack,
+        timestamp: new Date().toISOString()
+    });
     gracefulShutdown('UNCAUGHT_EXCEPTION');
 });
 
 process.on('unhandledRejection', (reason, promise) => {
-    console.error('💥 Unhandled Rejection at:', promise, 'reason:', reason);
+    console.error('💥 Unhandled Rejection:', {
+        reason: reason,
+        promise: promise,
+        timestamp: new Date().toISOString()
+    });
     gracefulShutdown('UNHANDLED_REJECTION');
 });
 
-module.exports = app;
+// Start the server
+startServer();
 
+// Export for testing
+module.exports = app;
