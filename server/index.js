@@ -43,10 +43,19 @@ const server = createServer(app);
 // Initialize Socket.IO with CORS configuration
 const io = new Server(server, {
     cors: {
-        origin: process.env.CORS_ORIGIN ? process.env.CORS_ORIGIN.split(',') : ['https://1f7b3935.mrb-6gc.pages.dev/'],
-        methods: ['GET', 'POST'],
-        credentials: true
-    }
+        origin: [
+            'http://localhost:5173',
+            'http://localhost:3000',
+            'https://mrb-6gc.pages.dev',           // Your main domain
+            'https://1f7b3935.mrb-6gc.pages.dev', // Your current deployment URL
+            'https://*.mrb-6gc.pages.dev'          // Wildcard for all preview deployments
+        ],
+        credentials: true,
+        methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+        allowedHeaders: ['Content-Type', 'Authorization'],
+        optionsSuccessStatus: 200
+    },
+    allowEIO3: true // Optional: for compatibility with older clients
 });
 
 // File upload configuration
