@@ -2633,33 +2633,116 @@ app.get('/api/reports/labor-efficiency', authMiddleware, async (req, res) => {
 });
 
 
-app.get('/api/reports/labor-vs-sales/export', authMiddleware, async (req, res) => {
+// Add timesheet export route
+app.get('/api/reports/timesheet/export', authMiddleware, async (req, res) => {
     try {
-        const { start_date, end_date, format = 'csv' } = req.query;
+        const { start_date, end_date, token } = req.query;
         
         if (!start_date || !end_date) {
-            return res.status(400).json({ error: "start_date and end_date are required" });
+            return res.status(400).json({ 
+                error: "start_date and end_date are required" 
+            });
         }
 
-        // Call your report logic as a function
-        const reportData = await generateLaborVsSalesReport(start_date, end_date, req.user);
+        console.log(`Generating timesheet export for ${start_date} to ${end_date}`);
 
-        if (format === 'csv') {
-            const csvHeaders = 'Date,Sales,Expenses,Labor Hours,Labor Cost,Labor Cost %,Sales per Hour,Cost per Hour\n';
-            const csvRows = reportData.data.map(row => 
-                `${row.date},${row.sales.toFixed(2)},${row.expenses.toFixed(2)},${row.labor_hours.toFixed(2)},${row.labor_cost.toFixed(2)},${row.labor_cost_percentage.toFixed(2)},${row.sales_per_hour.toFixed(2)},${row.cost_per_hour.toFixed(2)}`
-            ).join('\n');
-            const csvContent = csvHeaders + csvRows;
+        // Query to get timesheet data
+        const timesheetQuery = `
+            SELECT 
+                e.uid,
+                e.email,
+                e.full_name,
+                e.pay_rate,
+                COALESCE(SUM(
+                    CASE 
+                        WHEN te.clock_out_time IS NOT NULL THEN
+                            EXTRACT(EPOCH FROM (te.clock_out_time - te.clock_in_timestamp))/3600 -
+                            COALESCE(
+                                CASE 
+                                    WHEN te.break_start_time IS NOT NULL AND te.break_end_time IS NOT NULL THEN
+                                        EXTRACT(EPOCH FROM (te.break_end_time - te.break_start_time))/3600
+                                    ELSE 0
+                                END, 0
+                            )
+                        ELSE 0
+                    END
+                ), 0) as total_hours,
+                COALESCE(SUM(
+                    CASE 
+                        WHEN te.clock_out_time IS NOT NULL THEN
+                            (EXTRACT(EPOCH FROM (te.clock_out_time - te.clock_in_timestamp))/3600 -
+                            COALESCE(
+                                CASE 
+                                    WHEN te.break_start_time IS NOT NULL AND te.break_end_time IS NOT NULL THEN
+                                        EXTRACT(EPOCH FROM (te.break_end_time - te.break_start_time))/3600
+                                    ELSE 0
+                                END, 0
+                            )) * COALESCE(e.pay_rate, 0)
+                        ELSE 0
+                    END
+                ), 0) as total_pay
+            FROM employees e
+            LEFT JOIN time_entries te ON e.uid = te.user_uid 
+                AND DATE(te.clock_in_timestamp) BETWEEN $1 AND $2
+                AND te.clock_out_time IS NOT NULL
+            GROUP BY e.uid, e.email, e.full_name, e.pay_rate
+            HAVING COALESCE(SUM(
+                CASE 
+                    WHEN te.clock_out_time IS NOT NULL THEN
+                        EXTRACT(EPOCH FROM (te.clock_out_time - te.clock_in_timestamp))/3600 -
+                        COALESCE(
+                            CASE 
+                                WHEN te.break_start_time IS NOT NULL AND te.break_end_time IS NOT NULL THEN
+                                    EXTRACT(EPOCH FROM (te.break_end_time - te.break_start_time))/3600
+                                ELSE 0
+                            END, 0
+                        )
+                    ELSE 0
+                END
+            ), 0) > 0
+            ORDER BY e.full_name, e.email
+        `;
 
-            res.setHeader('Content-Type', 'text/csv');
-            res.setHeader('Content-Disposition', `attachment; filename="labor_vs_sales_${start_date}_to_${end_date}.csv"`);
-            res.send(csvContent);
-        } else {
-            res.json(reportData);
-        }
-    } catch (err) {
-        console.error("Error exporting labor vs sales report:", err);
-        res.status(500).json({ error: "Failed to export report." });
+        const result = await db.query(timesheetQuery, [start_date, end_date]);
+        const timesheetData = result.rows;
+
+        // Generate CSV content
+        const csvHeaders = [
+            'Employee Name',
+            'Email',
+            'Pay Rate (£/hr)',
+            'Total Hours',
+            'Total Pay (£)'
+        ];
+
+        const csvRows = timesheetData.map(row => [
+            row.full_name || 'Name not set',
+            row.email,
+            parseFloat(row.pay_rate || 0).toFixed(2),
+            parseFloat(row.total_hours).toFixed(2),
+            parseFloat(row.total_pay).toFixed(2)
+        ]);
+
+        const csvContent = [
+            csvHeaders.join(','),
+            ...csvRows.map(row => row.join(','))
+        ].join('\n');
+
+        // Set headers for CSV download
+        res.setHeader('Content-Type', 'text/csv');
+        res.setHeader('Content-Disposition', `attachment; filename="timesheet_${start_date}_to_${end_date}.csv"`);
+        
+        // Send CSV content
+        res.send(csvContent);
+
+        console.log(`✅ Timesheet CSV export generated successfully for ${start_date} to ${end_date}`);
+
+    } catch (error) {
+        console.error('❌ Timesheet export error:', error);
+        res.status(500).json({ 
+            error: 'Failed to generate timesheet export',
+            details: process.env.NODE_ENV === 'development' ? error.message : undefined
+        });
     }
 });
 
