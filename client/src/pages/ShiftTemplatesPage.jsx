@@ -17,7 +17,7 @@ const ShiftTemplatesPage = () => {
     const fetchTemplates = async () => {
         const token = await auth.currentUser.getIdToken();
         try {
-            const response = await fetch('http://localhost:5000/api/shift-templates', {
+            const response = await fetch('${API_URL}/api/shift-templates', {
                 headers: { 'Authorization': `Bearer ${token}` }
             });
             const data = await response.json();
@@ -55,7 +55,7 @@ const ShiftTemplatesPage = () => {
 
         const token = await auth.currentUser.getIdToken();
         try {
-            const response = await fetch('http://localhost:5000/api/shift-templates', {
+            const response = await fetch('${API_URL}/api/shift-templates', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
                 body: JSON.stringify({ name, start_time: startTime, duration_minutes })
@@ -84,7 +84,7 @@ const ShiftTemplatesPage = () => {
         setDeletingId(templateId);
         const token = await auth.currentUser.getIdToken();
         try {
-            const response = await fetch(`http://localhost:5000/api/shift-templates/${templateId}`, {
+            const response = await fetch(`${API_URL}/api/shift-templates/${templateId}`, {
                 method: 'DELETE',
                 headers: { 'Authorization': `Bearer ${token}` }
             });

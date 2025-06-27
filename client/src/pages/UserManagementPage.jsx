@@ -19,7 +19,7 @@ const UserManagementPage = ({ userProfile }) => {
             setLoading(true);
             try {
                 const token = await auth.currentUser.getIdToken();
-                const response = await fetch('http://localhost:5000/api/users', {
+                const response = await fetch('${API_URL}/api/users', {
                     headers: { 'Authorization': `Bearer ${token}` }
                 });
                 const data = await response.json();
@@ -45,7 +45,7 @@ const UserManagementPage = ({ userProfile }) => {
         
         try {
             const token = await auth.currentUser.getIdToken();
-            const response = await fetch('http://localhost:5000/api/users', {
+            const response = await fetch('${API_URL}:5000/api/users', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
                 body: JSON.stringify({ email, password, role })
@@ -73,7 +73,7 @@ const UserManagementPage = ({ userProfile }) => {
         setDisablingId(userToDisable.uid);
         try {
             const token = await auth.currentUser.getIdToken();
-            const response = await fetch(`http://localhost:5000/api/users/${userToDisable.uid}`, {
+            const response = await fetch(`${API_URL}/api/users/${userToDisable.uid}`, {
                 method: 'DELETE',
                 headers: { 'Authorization': `Bearer ${token}` }
             });

@@ -170,10 +170,30 @@ class ApiService {
         return result;
     }
 
+    async requestTransactionDeletion(id, reason) {
+        const result = await this.authenticatedRequest(`/api/transactions/${id}/request-delete`, {
+            method: 'POST',
+            body: JSON.stringify({ reason }),
+        });
+        
+        this.clearCachePattern('/api/approval');
+        return result;
+    }
+
     // DASHBOARD API METHODS
     async getDashboardSummary(params = {}) {
         const queryString = new URLSearchParams(params).toString();
         return this.authenticatedRequest(`/api/dashboard/summary${queryString ? `?${queryString}` : ''}`);
+    }
+
+    async getDashboardStats(params = {}) {
+        const queryString = new URLSearchParams(params).toString();
+        return this.authenticatedRequest(`/api/dashboard/stats${queryString ? `?${queryString}` : ''}`);
+    }
+
+    async getDashboardChartData(params = {}) {
+        const queryString = new URLSearchParams(params).toString();
+        return this.authenticatedRequest(`/api/dashboard/chart-data${queryString ? `?${queryString}` : ''}`);
     }
 
     // USER API METHODS
@@ -321,6 +341,36 @@ class ApiService {
         return result;
     }
 
+    async publishRota(data) {
+        const result = await this.authenticatedRequest('/api/rota/publish', {
+            method: 'POST',
+            body: JSON.stringify(data),
+        });
+        
+        this.clearCachePattern('/api/rota');
+        return result;
+    }
+
+    async copyPreviousWeek(data) {
+        const result = await this.authenticatedRequest('/api/rota/copy-previous-week', {
+            method: 'POST',
+            body: JSON.stringify(data),
+        });
+        
+        this.clearCachePattern('/api/rota');
+        return result;
+    }
+
+    async smartAssignShifts(data) {
+        const result = await this.authenticatedRequest('/api/rota/smart-assign', {
+            method: 'POST',
+            body: JSON.stringify(data),
+        });
+        
+        this.clearCachePattern('/api/rota');
+        return result;
+    }
+
     // AVAILABILITY API METHODS
     async getAvailabilityRequests() {
         return this.authenticatedRequest('/api/availability-requests');
@@ -355,30 +405,55 @@ class ApiService {
         return result;
     }
 
-    // TIME ENTRIES API METHODS
-    async getTimeEntries(params = {}) {
-        const queryString = new URLSearchParams(params).toString();
-        return this.authenticatedRequest(`/api/time-entries${queryString ? `?${queryString}` : ''}`);
+    // TIME CLOCK API METHODS
+    async getTimeClockStatus() {
+        return this.authenticatedRequest('/api/time-clock/status');
     }
 
     async clockIn(data) {
-        const result = await this.authenticatedRequest('/api/time-clock/in', {
+        const result = await this.authenticatedRequest('/api/time-clock/clock-in', {
             method: 'POST',
             body: JSON.stringify(data),
         });
         
-        this.clearCachePattern('/api/time-entries');
+        this.clearCachePattern('/api/time-clock');
+        this.clearCachePattern('/api/dashboard');
         return result;
     }
 
     async clockOut(data) {
-        const result = await this.authenticatedRequest('/api/time-clock/out', {
+        const result = await this.authenticatedRequest('/api/time-clock/clock-out', {
             method: 'POST',
             body: JSON.stringify(data),
         });
         
-        this.clearCachePattern('/api/time-entries');
+        this.clearCachePattern('/api/time-clock');
+        this.clearCachePattern('/api/dashboard');
         return result;
+    }
+
+    async startBreak() {
+        const result = await this.authenticatedRequest('/api/time-clock/break-start', {
+            method: 'POST',
+        });
+        
+        this.clearCachePattern('/api/time-clock');
+        return result;
+    }
+
+    async endBreak() {
+        const result = await this.authenticatedRequest('/api/time-clock/break-end', {
+            method: 'POST',
+        });
+        
+        this.clearCachePattern('/api/time-clock');
+        return result;
+    }
+
+    // TIME ENTRIES API METHODS
+    async getTimeEntries(params = {}) {
+        const queryString = new URLSearchParams(params).toString();
+        return this.authenticatedRequest(`/api/time-entries${queryString ? `?${queryString}` : ''}`);
     }
 
     // APPROVAL API METHODS
@@ -386,8 +461,8 @@ class ApiService {
         return this.authenticatedRequest('/api/approval-requests');
     }
 
-    async approveRequest(id, data) {
-        const result = await this.authenticatedRequest(`/api/approval-requests/${id}/approve`, {
+    async approveRequest(id, data = {}) {
+        const result = await this.authenticatedRequest(`/api/transactions/${id}/approve-delete`, {
             method: 'POST',
             body: JSON.stringify(data),
         });
@@ -397,8 +472,8 @@ class ApiService {
         return result;
     }
 
-    async rejectRequest(id, data) {
-        const result = await this.authenticatedRequest(`/api/approval-requests/${id}/reject`, {
+    async rejectRequest(id, data = {}) {
+        const result = await this.authenticatedRequest(`/api/transactions/${id}/reject-delete`, {
             method: 'POST',
             body: JSON.stringify(data),
         });
@@ -413,15 +488,88 @@ class ApiService {
         return this.authenticatedRequest(`/api/reports/timesheet${queryString ? `?${queryString}` : ''}`);
     }
 
-    async getLaborReport(params = {}) {
+    async getTimesheetSummary(params = {}) {
         const queryString = new URLSearchParams(params).toString();
-        return this.authenticatedRequest(`/api/reports/labor${queryString ? `?${queryString}` : ''}`);
+        return this.authenticatedRequest(`/api/reports/timesheet-summary${queryString ? `?${queryString}` : ''}`);
+    }
+
+    async getLaborVsSalesReport(params = {}) {
+        const queryString = new URLSearchParams(params).toString();
+        return this.authenticatedRequest(`/api/reports/labor-vs-sales${queryString ? `?${queryString}` : ''}`);
+    }
+
+    async getLaborEfficiencyReport(params = {}) {
+        const queryString = new URLSearchParams(params).toString();
+        return this.authenticatedRequest(`/api/reports/labor-efficiency${queryString ? `?${queryString}` : ''}`);
+    }
+
+    // ANALYTICS API METHODS
+    async getRealTimeAnalytics() {
+        return this.authenticatedRequest('/api/analytics/real-time');
+    }
+
+    async getSalesForecast(params = {}) {
+        const queryString = new URLSearchParams(params).toString();
+        return this.authenticatedRequest(`/api/analytics/forecast${queryString ? `?${queryString}` : ''}`);
+    }
+
+    async getPeakHoursAnalysis(params = {}) {
+        const queryString = new URLSearchParams(params).toString();
+        return this.authenticatedRequest(`/api/analytics/peak-hours${queryString ? `?${queryString}` : ''}`);
+    }
+
+    async getSalesMetrics(params = {}) {
+        const queryString = new URLSearchParams(params).toString();
+        return this.authenticatedRequest(`/api/analytics/sales-metrics${queryString ? `?${queryString}` : ''}`);
+    }
+
+    async getCustomerMetrics(params = {}) {
+        const queryString = new URLSearchParams(params).toString();
+        return this.authenticatedRequest(`/api/analytics/customer-metrics${queryString ? `?${queryString}` : ''}`);
+    }
+
+    // NOTIFICATIONS API METHODS
+    async getNotifications() {
+        return this.authenticatedRequest('/api/notifications');
+    }
+
+    async markNotificationRead(id) {
+        const result = await this.authenticatedRequest(`/api/notifications/${id}/read`, {
+            method: 'POST',
+        });
+        
+        this.clearCachePattern('/api/notifications');
+        return result;
+    }
+
+    async markAllNotificationsRead() {
+        const result = await this.authenticatedRequest('/api/notifications/mark-all-read', {
+            method: 'POST',
+        });
+        
+        this.clearCachePattern('/api/notifications');
+        return result;
     }
 
     // ACTIVITY LOGS API METHODS
     async getActivityLogs(params = {}) {
         const queryString = new URLSearchParams(params).toString();
         return this.authenticatedRequest(`/api/activity-logs${queryString ? `?${queryString}` : ''}`);
+    }
+
+    // SETTINGS API METHODS
+    async getSettings() {
+        return this.authenticatedRequest('/api/settings');
+    }
+
+    async updateSettings(data) {
+        const result = await this.authenticatedRequest('/api/settings', {
+            method: 'PUT',
+            body: JSON.stringify(data),
+        });
+        
+        this.clearCachePattern('/api/settings');
+        return result;
     }
 
     // HEALTH CHECK (no auth required)
@@ -439,33 +587,46 @@ class ApiService {
         window.open(url, '_blank');
     }
 
-    // Add these methods to your ApiService class
+    // Upload file method
+    async uploadFile(file, endpoint = '/api/upload') {
+        const { auth } = await import('../firebase');
+        const token = await auth.currentUser.getIdToken();
+        
+        const formData = new FormData();
+        formData.append('file', file);
+        
+        const response = await fetch(`${this.baseURL}${endpoint}`, {
+            method: 'POST',
+            headers: {
+                'Authorization': `Bearer ${token}`,
+            },
+            body: formData,
+        });
+        
+        if (!response.ok) {
+            const errorData = await response.json().catch(() => ({}));
+            throw new Error(errorData.error || `Upload failed: ${response.status}`);
+        }
+        
+        return response.json();
+    }
 
-// ANALYTICS API METHODS
-async getRealTimeAnalytics() {
-    return this.authenticatedRequest('/api/analytics/real-time');
+    // Batch operations
+    async batchRequest(requests) {
+        const results = await Promise.allSettled(
+            requests.map(({ endpoint, options }) => this.authenticatedRequest(endpoint, options))
+        );
+        
+        return results.map((result, index) => ({
+            index,
+            status: result.status,
+            data: result.status === 'fulfilled' ? result.value : null,
+            error: result.status === 'rejected' ? result.reason : null,
+        }));
+    }
 }
 
-async getSalesForecast() {
-    return this.authenticatedRequest('/api/analytics/forecast');
-}
-
-async getPeakHoursAnalysis() {
-    return this.authenticatedRequest('/api/analytics/peak-hours');
-}
-
-async getSalesMetrics(params = {}) {
-    const queryString = new URLSearchParams(params).toString();
-    return this.authenticatedRequest(`/api/analytics/sales-metrics${queryString ? `?${queryString}` : ''}`);
-}
-async getCustomerMetrics(params = {}) {
-    const queryString = new URLSearchParams(params).toString();
-    return this.authenticatedRequest(`/api/analytics/customer-metrics${queryString ? `?${queryString}` : ''}`);
-
-}
-}
-
-
+// Create singleton instance
 const apiService = new ApiService();
 
 // Export both named and default exports

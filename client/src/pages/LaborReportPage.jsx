@@ -22,7 +22,7 @@ const LaborReportPage = () => {
         
         try {
             const token = await auth.currentUser.getIdToken();
-            let url = 'http://localhost:5000/api/reports/labor-vs-sales';
+            let url = '${API_URL}/api/reports/labor-vs-sales';
             
             if (viewMode === 'daily') {
                 url += `?start_date=${dateRange.start_date}&end_date=${dateRange.end_date}`;
@@ -70,7 +70,7 @@ const LaborReportPage = () => {
     const handleExport = async () => {
         try {
             const token = await auth.currentUser.getIdToken();
-            const url = `http://localhost:5000/api/reports/labor-vs-sales/export?start_date=${dateRange.start_date}&end_date=${dateRange.end_date}&format=csv`;
+            const url = `${API_URL}/api/reports/labor-vs-sales/export?start_date=${dateRange.start_date}&end_date=${dateRange.end_date}&format=csv`;
             
             const response = await fetch(url, {
                 headers: { 'Authorization': `Bearer ${token}` }

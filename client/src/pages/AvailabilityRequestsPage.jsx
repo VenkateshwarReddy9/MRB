@@ -13,7 +13,7 @@ const AvailabilityRequestsPage = () => {
         setLoading(true);
         const token = await auth.currentUser.getIdToken();
         try {
-            const response = await fetch('http://localhost:5000/api/availability/pending', {
+            const response = await fetch('${API_URL}/api/availability/pending', {
                 headers: { 'Authorization': `Bearer ${token}` }
             });
             if (!response.ok) throw new Error('Failed to fetch pending requests.');
@@ -40,7 +40,7 @@ const AvailabilityRequestsPage = () => {
         setActioningId(requestId);
         const token = await auth.currentUser.getIdToken();
         try {
-            const response = await fetch(`http://localhost:5000/api/availability/${requestId}/${action}`, {
+            const response = await fetch(`${API_URL}/api/availability/${requestId}/${action}`, {
                 method: 'POST',
                 headers: { 'Authorization': `Bearer ${token}` }
             });

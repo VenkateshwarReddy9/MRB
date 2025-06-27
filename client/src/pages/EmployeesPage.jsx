@@ -16,7 +16,7 @@ const EmployeesPage = () => {
   const fetchEmployees = async (user) => {
     try {
       const token    = await user.getIdToken();
-      const response = await fetch('http://localhost:5000/api/employees', {
+      const response = await fetch('${API_URL}/api/employees', {
         headers: { 'Authorization': `Bearer ${token}` }
       });
       if (!response.ok) {

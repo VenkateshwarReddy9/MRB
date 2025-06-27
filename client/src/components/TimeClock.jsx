@@ -12,6 +12,8 @@ const TimeClock = () => {
     const [currentTime, setCurrentTime] = useState(new Date());
     const [actionLoading, setActionLoading] = useState(false);
     const [error, setError] = useState('');
+ 
+    const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
 
     // Update current time every second
     useEffect(() => {
@@ -89,7 +91,7 @@ const TimeClock = () => {
         setLoading(true);
         try {
             const token = await auth.currentUser.getIdToken();
-            const response = await fetch('http://localhost:5000/api/time-clock/status', {
+            const response = await fetch('${API_URL}/api/time-clock/status', {
                 headers: { 'Authorization': `Bearer ${token}` }
             });
             
@@ -144,7 +146,7 @@ const TimeClock = () => {
         
         try {
             const token = await auth.currentUser.getIdToken();
-            const response = await fetch('http://localhost:5000/api/time-clock/clock-in', {
+            const response = await fetch('${API_URL}/api/time-clock/clock-in', {
                 method: 'POST',
                 headers: { 
                     'Content-Type': 'application/json',
@@ -181,7 +183,7 @@ const TimeClock = () => {
         
         try {
             const token = await auth.currentUser.getIdToken();
-            const response = await fetch('http://localhost:5000/api/time-clock/clock-out', {
+            const response = await fetch('${API_URL}/api/time-clock/clock-out',  {
                 method: 'POST',
                 headers: { 
                     'Content-Type': 'application/json',
@@ -217,7 +219,7 @@ const TimeClock = () => {
         
         try {
             const token = await auth.currentUser.getIdToken();
-            const response = await fetch('http://localhost:5000/api/time-clock/break-start', {
+            const response = await fetch('${API_URL}/api/time-clock/break-start', {
                 method: 'POST',
                 headers: { 
                     'Content-Type': 'application/json',
@@ -250,7 +252,7 @@ const TimeClock = () => {
         
         try {
             const token = await auth.currentUser.getIdToken();
-            const response = await fetch('http://localhost:5000/api/time-clock/break-end', {
+            const response = await fetch('${API_URL}/api/time-clock/break-end', {
                 method: 'POST',
                 headers: { 
                     'Content-Type': 'application/json',

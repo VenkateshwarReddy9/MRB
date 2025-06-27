@@ -21,7 +21,7 @@ const TimeEntriesAdminPage = () => {
             const headers = { 'Authorization': `Bearer ${token}` };
             
             try {
-                const response = await fetch(`http://localhost:5000/api/time-entries?start_date=${format(startDate, 'yyyy-MM-dd')}&end_date=${format(endDate, 'yyyy-MM-dd')}`, { headers });
+                const response = await fetch(`${API_URL}/api/time-entries?start_date=${format(startDate, 'yyyy-MM-dd')}&end_date=${format(endDate, 'yyyy-MM-dd')}`, { headers });
                 if (!response.ok) throw new Error('Could not fetch time entries.');
                 const data = await response.json();
                 setTimeEntries(data.data || []);

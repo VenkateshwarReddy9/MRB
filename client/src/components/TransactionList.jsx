@@ -15,7 +15,7 @@ const TransactionList = ({ title, transactions, userProfile, onEdit, onActionCom
         setActioningId(transactionId);
         try {
             const token = await user.getIdToken();
-            const response = await fetch(`http://localhost:5000/api/transactions/${transactionId}/request-delete`, {
+            const response = await fetch(`${API_URL}/${transactionId}/request-delete`, {
                 method: 'POST',
                 headers: { 'Authorization': `Bearer ${token}` }
             });
@@ -44,7 +44,7 @@ const TransactionList = ({ title, transactions, userProfile, onEdit, onActionCom
   try {
     const token = await user.getIdToken();
     const response = await fetch(
-      `http://localhost:5000/api/transactions/${transactionId}`,
+      `${API_URL}/api/transactions/${transactionId}`,
       {
         method: 'DELETE',
         headers: { 'Authorization': `Bearer ${token}` }

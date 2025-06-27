@@ -24,7 +24,7 @@ const TimesheetPage = () => {
         const endDateStr = format(end, 'yyyy-MM-dd');
 
         try {
-            const response = await fetch(`http://localhost:5000/api/reports/timesheet?start_date=${startDateStr}&end_date=${endDateStr}`, { headers });
+            const response = await fetch(`${API_URL}/api/reports/timesheet?start_date=${startDateStr}&end_date=${endDateStr}`, { headers });
             if (!response.ok) throw new Error('Failed to fetch timesheet report.');
             const data = await response.json();
             setReportData(data.data || []);
@@ -46,7 +46,7 @@ const TimesheetPage = () => {
         
         try {
             const token = await auth.currentUser.getIdToken();
-            const exportUrl = `http://localhost:5000/api/reports/timesheet/export?start_date=${startDateStr}&end_date=${endDateStr}&token=${token}`;
+            const exportUrl = `${API_URL}/api/reports/timesheet/export?start_date=${startDateStr}&end_date=${endDateStr}&token=${token}`;
             window.open(exportUrl, '_blank');
         } catch (err) {
             alert('Failed to export timesheet. Please try again.');

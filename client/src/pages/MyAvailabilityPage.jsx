@@ -20,7 +20,7 @@ const MyAvailabilityPage = () => {
         setLoading(true);
         const token = await user.getIdToken();
         try {
-            const response = await fetch(`http://localhost:5000/api/availability?user_uid=${user.uid}`, {
+            const response = await fetch(`${API_URL}/api/availability?user_uid=${user.uid}`, {
                 headers: { 'Authorization': `Bearer ${token}` }
             });
             if (!response.ok) throw new Error('Failed to fetch availability.');
@@ -50,7 +50,7 @@ const MyAvailabilityPage = () => {
         setSubmitting(true);
         try {
             const token = await user.getIdToken();
-            const response = await fetch('http://localhost:5000/api/availability', {
+            const response = await fetch('${API_URL}/api/availability', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
                 body: JSON.stringify({ start_time: startTime, end_time: endTime, reason })
@@ -74,7 +74,7 @@ const MyAvailabilityPage = () => {
         setDeletingId(availabilityId);
         const token = await user.getIdToken();
         try {
-            const response = await fetch(`http://localhost:5000/api/availability/${availabilityId}`, {
+            const response = await fetch(`${API_URL}/api/availability/${availabilityId}`, {
                 method: 'DELETE',
                 headers: { 'Authorization': `Bearer ${token}` }
             });

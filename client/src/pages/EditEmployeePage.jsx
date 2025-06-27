@@ -25,7 +25,7 @@ const EditEmployeePage = () => {
 
       try {
         const token    = await user.getIdToken();
-        const response = await fetch(`http://localhost:5000/api/employees/${uid}`, {
+        const response = await fetch(`${API_URL}/api/employees/${uid}`, {
           headers: { Authorization: `Bearer ${token}` }
         });
 
@@ -80,7 +80,7 @@ const EditEmployeePage = () => {
 
     try {
       const token    = await auth.currentUser.getIdToken();
-      const response = await fetch(`http://localhost:5000/api/employees/${uid}`, {
+      const response = await fetch(`${API_URL}/api/employees/${uid}`, {
         method:  'PUT',
         headers: {
           'Content-Type':  'application/json',

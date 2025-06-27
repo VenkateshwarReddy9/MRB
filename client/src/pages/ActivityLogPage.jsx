@@ -18,7 +18,7 @@ const ActivityLogPage = () => {
             }
             try {
                 const token = await auth.currentUser.getIdToken();
-                const response = await fetch('http://localhost:5000/api/activity-logs', {
+                const response = await fetch('${API_URL}/api/activity-logs', {
                     headers: { 'Authorization': `Bearer ${token}` }
                 });
                 if (!response.ok) throw new Error('Could not fetch activity logs.');
