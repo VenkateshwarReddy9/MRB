@@ -2633,10 +2633,10 @@ app.get('/api/reports/labor-efficiency', authMiddleware, async (req, res) => {
 });
 
 
-// Add timesheet export route
+// Add this route to your backend
 app.get('/api/reports/timesheet/export', authMiddleware, async (req, res) => {
     try {
-        const { start_date, end_date, token } = req.query;
+        const { start_date, end_date, format = 'csv' } = req.query;
         
         if (!start_date || !end_date) {
             return res.status(400).json({ 
@@ -2650,8 +2650,8 @@ app.get('/api/reports/timesheet/export', authMiddleware, async (req, res) => {
         const timesheetQuery = `
             SELECT 
                 e.uid,
-                e.email,
                 e.full_name,
+                e.email,
                 e.pay_rate,
                 COALESCE(SUM(
                     CASE 
@@ -2685,7 +2685,7 @@ app.get('/api/reports/timesheet/export', authMiddleware, async (req, res) => {
             LEFT JOIN time_entries te ON e.uid = te.user_uid 
                 AND DATE(te.clock_in_timestamp) BETWEEN $1 AND $2
                 AND te.clock_out_time IS NOT NULL
-            GROUP BY e.uid, e.email, e.full_name, e.pay_rate
+            GROUP BY e.uid, e.full_name, e.email, e.pay_rate
             HAVING COALESCE(SUM(
                 CASE 
                     WHEN te.clock_out_time IS NOT NULL THEN
@@ -2700,42 +2700,52 @@ app.get('/api/reports/timesheet/export', authMiddleware, async (req, res) => {
                     ELSE 0
                 END
             ), 0) > 0
-            ORDER BY e.full_name, e.email
+            ORDER BY e.full_name
         `;
 
         const result = await db.query(timesheetQuery, [start_date, end_date]);
         const timesheetData = result.rows;
 
-        // Generate CSV content
-        const csvHeaders = [
-            'Employee Name',
-            'Email',
-            'Pay Rate (£/hr)',
-            'Total Hours',
-            'Total Pay (£)'
-        ];
+        if (format === 'csv') {
+            // Generate CSV content
+            const csvHeaders = [
+                'Employee Name',
+                'Email',
+                'Pay Rate (£/hr)',
+                'Total Hours',
+                'Total Pay (£)'
+            ];
 
-        const csvRows = timesheetData.map(row => [
-            row.full_name || 'Name not set',
-            row.email,
-            parseFloat(row.pay_rate || 0).toFixed(2),
-            parseFloat(row.total_hours).toFixed(2),
-            parseFloat(row.total_pay).toFixed(2)
-        ]);
+            const csvRows = timesheetData.map(row => [
+                row.full_name || 'Name not set',
+                row.email,
+                parseFloat(row.pay_rate || 0).toFixed(2),
+                parseFloat(row.total_hours).toFixed(2),
+                parseFloat(row.total_pay).toFixed(2)
+            ]);
 
-        const csvContent = [
-            csvHeaders.join(','),
-            ...csvRows.map(row => row.join(','))
-        ].join('\n');
+            const csvContent = [
+                csvHeaders.join(','),
+                ...csvRows.map(row => row.join(','))
+            ].join('\n');
 
-        // Set headers for CSV download
-        res.setHeader('Content-Type', 'text/csv');
-        res.setHeader('Content-Disposition', `attachment; filename="timesheet_${start_date}_to_${end_date}.csv"`);
-        
-        // Send CSV content
-        res.send(csvContent);
+            // Set headers for CSV download
+            res.setHeader('Content-Type', 'text/csv');
+            res.setHeader('Content-Disposition', `attachment; filename="timesheet_${start_date}_to_${end_date}.csv"`);
+            
+            // Send CSV content
+            res.send(csvContent);
 
-        console.log(`✅ Timesheet CSV export generated successfully for ${start_date} to ${end_date}`);
+            console.log(`✅ Timesheet CSV export generated successfully for ${start_date} to ${end_date}`);
+
+        } else {
+            // Return JSON data
+            res.json({
+                success: true,
+                data: timesheetData,
+                period: { start_date, end_date }
+            });
+        }
 
     } catch (error) {
         console.error('❌ Timesheet export error:', error);
