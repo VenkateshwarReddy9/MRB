@@ -5,6 +5,8 @@ import { auth } from '../firebase';
 // Make sure to import 'parse' and 'addMinutes' from date-fns
 import { format, addDays, subDays, startOfWeek, parse, addMinutes } from 'date-fns';
 
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
+
 const MySchedulePage = () => {
     const [weekStartDate, setWeekStartDate] = useState(startOfWeek(new Date(), { weekStartsOn: 1 }));
     const [myShifts, setMyShifts] = useState([]);

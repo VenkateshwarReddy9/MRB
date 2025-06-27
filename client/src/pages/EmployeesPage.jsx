@@ -5,6 +5,8 @@ import { Link } from 'react-router-dom';
 import { auth } from '../firebase';
 import { onAuthStateChanged } from 'firebase/auth';
 
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
+
 const EmployeesPage = () => {
   const [employees, setEmployees] = useState([]);
   const [loading, setLoading]       = useState(true);
@@ -16,7 +18,7 @@ const EmployeesPage = () => {
   const fetchEmployees = async (user) => {
     try {
       const token    = await user.getIdToken();
-      const response = await fetch('${API_URL}/api/employees', {
+      const response = await fetch(`${API_URL}/api/employees`, {
         headers: { 
         'Authorization': `Bearer ${token}`,
         'Content-Type': 'application/json'

@@ -5,6 +5,8 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { auth } from '../firebase';
 import { onAuthStateChanged } from 'firebase/auth';
 
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
+
 const EditEmployeePage = () => {
   const { uid } = useParams();
   const navigate = useNavigate();
