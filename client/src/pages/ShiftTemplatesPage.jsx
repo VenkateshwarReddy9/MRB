@@ -3,6 +3,8 @@
 import React, { useState, useEffect } from 'react';
 import { auth } from '../firebase';
 
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
+
 const ShiftTemplatesPage = () => {
     const [templates, setTemplates] = useState([]);
     const [name, setName] = useState('');
@@ -17,7 +19,7 @@ const ShiftTemplatesPage = () => {
     const fetchTemplates = async () => {
         const token = await auth.currentUser.getIdToken();
         try {
-            const response = await fetch('${API_URL}/api/shift-templates', {
+            const response = await fetch(`${API_URL}/api/shift-templates`, {
                 headers: { 
         'Authorization': `Bearer ${token}`,
         'Content-Type': 'application/json'
@@ -58,7 +60,7 @@ const ShiftTemplatesPage = () => {
 
         const token = await auth.currentUser.getIdToken();
         try {
-            const response = await fetch('${API_URL}/api/shift-templates', {
+            const response = await fetch(`${API_URL}/api/shift-templates`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
                 body: JSON.stringify({ name, start_time: startTime, duration_minutes })
