@@ -2,7 +2,10 @@
 
 class ApiService {
     constructor() {
-        this.baseURL = import.meta.env.VITE_API_URL;
+        this.baseURL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
+        if (!import.meta.env.VITE_API_URL) {
+            console.warn('VITE_API_URL is not set, using default http://localhost:5000');
+        }
         this.timeout = 30000;
         this.cache = new Map();
         this.cacheTimeout = 5 * 60 * 1000; // 5 minutes
