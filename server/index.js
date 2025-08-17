@@ -15,7 +15,7 @@ require('dotenv').config();
 const {
   validateUser,
   validateEmployee,
-  validateUid      // ← add this line
+  validateUid      // validates UID parameters
 } = require('./middleware/validation');
 
 const db = require('./database.js');
