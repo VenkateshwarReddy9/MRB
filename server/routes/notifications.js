@@ -63,11 +63,10 @@ router.put('/mark-all-read', async (req, res) => {
             UPDATE notifications
             SET is_read = true
             WHERE user_uid = $1 AND is_read = false
-            RETURNING COUNT(*) as updated_count
         `;
-        const { rows } = await db.query(sql, [req.user.uid]);
+        const result = await db.query(sql, [req.user.uid]);
 
-        res.json({ message: 'All notifications marked as read', count: rows.length });
+        res.json({ message: 'All notifications marked as read', count: result.rowCount });
     } catch (err) {
         console.error('Error marking all notifications as read:', err);
         res.status(500).json({ error: 'Failed to mark all notifications as read.' });
