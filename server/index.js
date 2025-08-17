@@ -14,11 +14,16 @@ require('dotenv').config();
 const {
   validateUser,
   validateEmployee,
-  validateUid,
+const {
+  validateUser,
+  validateEmployee,
+  // from both branches:
+  validateUid, // validates UID parameters
   validateTransaction,
   validateId,
   validateDateQuery,
-  validateShiftTemplate
+  validateShiftTemplate,
+
 } = require('./middleware/validation');
 const {
   authMiddleware,
