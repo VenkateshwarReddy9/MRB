@@ -207,7 +207,6 @@ await client.query(`
     await client.query(`ALTER TABLE rota_shifts ADD COLUMN IF NOT EXISTS published_by TEXT;`);
     await client.query(`ALTER TABLE rota_shifts ADD COLUMN IF NOT EXISTS status TEXT DEFAULT 'scheduled';`);
     await client.query(`ALTER TABLE time_entries ADD COLUMN IF NOT EXISTS user_email TEXT;`);
-    await client.query(`ALTER TABLE time_entries ADD COLUMN IF NOT EXISTS total_hours NUMERIC(5,2);`);
     await client.query(`ALTER TABLE time_entries ADD COLUMN IF NOT EXISTS notes TEXT;`);
     await client.query(`ALTER TABLE time_entries ADD COLUMN IF NOT EXISTS location TEXT;`);
     await client.query(`ALTER TABLE activity_logs ADD COLUMN IF NOT EXISTS ip_address INET,ADD COLUMN IF NOT EXISTS user_agent TEXT;`);
