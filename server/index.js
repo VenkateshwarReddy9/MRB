@@ -36,6 +36,8 @@ const {
 const { logActivity, createNotification } = activityService;
 const analyticsRoutes = require('./routes/analytics');
 const notificationRoutes = require('./routes/notifications');
+const authRoutes = require('./routes/auth');
+const transactionRoutes = require('./routes/transactions');
 
 const db = require('./database.js');
 
@@ -181,7 +183,7 @@ const limiter = rateLimit({
 });
 
 app.use('/api/', limiter);
-app.use('/api/auth', authRateLimit);
+app.use('/api/auth', authRateLimit, authRoutes);
 app.use('/api/login', loginRateLimit);
 
 app.use(express.json({ limit: '10mb' }));
@@ -192,7 +194,7 @@ app.use('/uploads', express.static('uploads'));
 
 // Authentication middleware
 // Apply auth middleware to protected routes
-app.use('/api/transactions', authMiddleware);
+app.use('/api/transactions', transactionRoutes);
 app.use('/api/employees', authMiddleware);
 app.use('/api/users', authMiddleware, adminOnly);
 app.use('/api/rota', authMiddleware);
