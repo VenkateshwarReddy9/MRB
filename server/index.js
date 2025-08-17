@@ -39,10 +39,17 @@ const notificationRoutes = require('./routes/notifications');
 
 const db = require('./database.js');
 
+const firebasePrivateKey = process.env.FIREBASE_PRIVATE_KEY;
+
+if (!firebasePrivateKey) {
+  console.error('FIREBASE_PRIVATE_KEY environment variable is not set.');
+  process.exit(1);
+}
+
 const firebaseCert = {
   projectId: process.env.FIREBASE_PROJECT_ID,
   clientEmail: process.env.FIREBASE_CLIENT_EMAIL,
-  privateKey: process.env.FIREBASE_PRIVATE_KEY.replace(/\\n/g, '\n')
+  privateKey: firebasePrivateKey.replace(/\\n/g, '\n')
 };
 
 admin.initializeApp({
