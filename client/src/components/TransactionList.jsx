@@ -108,7 +108,7 @@ const TransactionList = ({ title, transactions, userProfile, onEdit, onActionCom
             
             <div className="space-y-3 max-h-96 overflow-y-auto">
                 {transactions.map(t => (
-                    <div key={t.id} className="bg-slate-700 border border-slate-600 p-4 rounded-lg hover:bg-slate-650 transition-all duration-200 shadow-lg">
+                    <div key={t.id} className="bg-slate-700 border border-slate-600 p-4 rounded-lg hover:bg-slate-600 transition-all duration-200 shadow-lg">
                         <div className="flex justify-between items-start">
                             {/* Left side: Description and Metadata */}
                             <div className="flex-1 min-w-0">
