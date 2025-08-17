@@ -535,18 +535,18 @@ class ApiService {
 
     async markNotificationRead(id) {
         const result = await this.authenticatedRequest(`/api/notifications/${id}/read`, {
-            method: 'POST',
+            method: 'PUT',
         });
-        
+
         this.clearCachePattern('/api/notifications');
         return result;
     }
 
     async markAllNotificationsRead() {
         const result = await this.authenticatedRequest('/api/notifications/mark-all-read', {
-            method: 'POST',
+            method: 'PUT',
         });
-        
+
         this.clearCachePattern('/api/notifications');
         return result;
     }
