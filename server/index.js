@@ -105,11 +105,6 @@ const broadcastAnalytics = async () => {
     }
 };
 
-// Notification broadcasting function
-const broadcastNotification = (userId, notification) => {
-    io.to(`user-${userId}`).emit('notification', notification);
-};
-
 // Schedule real-time updates every 30 seconds
 cron.schedule('*/30 * * * * *', broadcastAnalytics);
 
