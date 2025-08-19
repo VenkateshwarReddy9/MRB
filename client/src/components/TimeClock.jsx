@@ -13,7 +13,7 @@ const TimeClock = () => {
     const [actionLoading, setActionLoading] = useState(false);
     const [error, setError] = useState('');
  
-    const API_URL = import.meta.env.VITE_API_URL ;
+    const API_URL = import.meta.env.VITE_API_URL;
 
     // Update current time every second
     useEffect(() => {
@@ -87,21 +87,28 @@ const TimeClock = () => {
             setLoading(false);
             return;
         }
-        
+
+        if (!API_URL) {
+            console.error('VITE_API_URL is not defined');
+            setError('API URL not configured');
+            setLoading(false);
+            return;
+        }
+
         setLoading(true);
         try {
             const token = await auth.currentUser.getIdToken();
-            const response = await fetch('${API_URL}/api/time-clock/status', {
-                headers: { 
-        'Authorization': `Bearer ${token}`,
-        'Content-Type': 'application/json'
-    }
+            const response = await fetch(`${API_URL}/api/time-clock/status`, {
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json'
+                }
             });
-            
+
             if (!response.ok) {
                 throw new Error(`HTTP ${response.status}`);
             }
-            
+
             const data = await response.json();
             console.log('Status response:', data);
             
@@ -144,16 +151,21 @@ const TimeClock = () => {
     }, []);
 
     const handleClockIn = async () => {
+        if (!API_URL) {
+            setError('API URL not configured');
+            return;
+        }
+
         setActionLoading(true);
         setError('');
-        
+
         try {
             const token = await auth.currentUser.getIdToken();
-            const response = await fetch('${API_URL}/api/time-clock/clock-in', {
+            const response = await fetch(`${API_URL}/api/time-clock/clock-in`, {
                 method: 'POST',
-                headers: { 
+                headers: {
                     'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${token}` 
+                    'Authorization': `Bearer ${token}`
                 },
                 body: JSON.stringify({
                     notes: null,
@@ -181,16 +193,21 @@ const TimeClock = () => {
     };
 
     const handleClockOut = async () => {
+        if (!API_URL) {
+            setError('API URL not configured');
+            return;
+        }
+
         setActionLoading(true);
         setError('');
-        
+
         try {
             const token = await auth.currentUser.getIdToken();
-            const response = await fetch('${API_URL}/api/time-clock/clock-out',  {
+            const response = await fetch(`${API_URL}/api/time-clock/clock-out`,  {
                 method: 'POST',
-                headers: { 
+                headers: {
                     'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${token}` 
+                    'Authorization': `Bearer ${token}`
                 },
                 body: JSON.stringify({
                     notes: null
@@ -217,16 +234,21 @@ const TimeClock = () => {
     };
 
     const handleBreakStart = async () => {
+        if (!API_URL) {
+            setError('API URL not configured');
+            return;
+        }
+
         setActionLoading(true);
         setError('');
-        
+
         try {
             const token = await auth.currentUser.getIdToken();
-            const response = await fetch('${API_URL}/api/time-clock/break-start', {
+            const response = await fetch(`${API_URL}/api/time-clock/break-start`, {
                 method: 'POST',
-                headers: { 
+                headers: {
                     'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${token}` 
+                    'Authorization': `Bearer ${token}`
                 }
             });
             
@@ -250,16 +272,21 @@ const TimeClock = () => {
     };
 
     const handleBreakEnd = async () => {
+        if (!API_URL) {
+            setError('API URL not configured');
+            return;
+        }
+
         setActionLoading(true);
         setError('');
-        
+
         try {
             const token = await auth.currentUser.getIdToken();
-            const response = await fetch('${API_URL}/api/time-clock/break-end', {
+            const response = await fetch(`${API_URL}/api/time-clock/break-end`, {
                 method: 'POST',
-                headers: { 
+                headers: {
                     'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${token}` 
+                    'Authorization': `Bearer ${token}`
                 }
             });
             
