@@ -5,48 +5,25 @@ const helmet = require('helmet');
 const compression = require('compression');
 const admin = require('firebase-admin');
 const analyticsService = require('./services/analyticsService');
-const activityService = require('./services/activityService');
-const upload = require('./middleware/upload');
 const { createServer } = require('http');
 const { Server } = require('socket.io');
 const cron = require('node-cron');
+const multer = require('multer');
+const path = require('path');
+const fs = require('fs');
 require('dotenv').config();
 const {
   validateUser,
   validateEmployee,
-  validateUid, // validates UID parameters
-  validateTransaction,
-  validateId,
-  validateDateQuery,
-  validateShiftTemplate
+  validateUid      // ← add this line
 } = require('./middleware/validation');
-const {
-  authMiddleware,
-  authRateLimit,
-  loginRateLimit,
-  adminOnly,
-  adminOrSecondaryAdmin
-} = require('./middleware/auth');
-
-const { logActivity, createNotification } = activityService;
-const analyticsRoutes = require('./routes/analytics');
-const notificationRoutes = require('./routes/notifications');
-const authRoutes = require('./routes/auth');
-const transactionRoutes = require('./routes/transactions');
 
 const db = require('./database.js');
-
-const firebasePrivateKey = process.env.FIREBASE_PRIVATE_KEY;
-
-if (!firebasePrivateKey) {
-  console.error('FIREBASE_PRIVATE_KEY environment variable is not set.');
-  process.exit(1);
-}
 
 const firebaseCert = {
   projectId: process.env.FIREBASE_PROJECT_ID,
   clientEmail: process.env.FIREBASE_CLIENT_EMAIL,
-  privateKey: firebasePrivateKey.replace(/\\n/g, '\n')
+  privateKey: process.env.FIREBASE_PRIVATE_KEY.replace(/\\n/g, '\n')
 };
 
 admin.initializeApp({
@@ -81,8 +58,37 @@ const io = new Server(server, {
     },
     allowEIO3: true // Optional: for compatibility with older clients
 });
-app.set('io', io);
-activityService.init(io);
+
+// File upload configuration
+const storage = multer.diskStorage({
+    destination: function (req, file, cb) {
+        const uploadDir = 'uploads/';
+        if (!fs.existsSync(uploadDir)) {
+            fs.mkdirSync(uploadDir, { recursive: true });
+        }
+        cb(null, uploadDir);
+    },
+    filename: function (req, file, cb) {
+        const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
+        cb(null, file.fieldname + '-' + uniqueSuffix + path.extname(file.originalname));
+    }
+});
+
+const upload = multer({ 
+    storage: storage,
+    limits: { fileSize: 5 * 1024 * 1024 }, // 5MB limit
+    fileFilter: (req, file, cb) => {
+        const allowedTypes = /jpeg|jpg|png|gif|pdf|csv|xlsx/;
+        const extname = allowedTypes.test(path.extname(file.originalname).toLowerCase());
+        const mimetype = allowedTypes.test(file.mimetype);
+        
+        if (mimetype && extname) {
+            return cb(null, true);
+        } else {
+            cb(new Error('Invalid file type'));
+        }
+    }
+});
 
 // WebSocket connection handling
 io.on('connection', (socket) => {
@@ -112,6 +118,11 @@ const broadcastAnalytics = async () => {
     } catch (error) {
         console.error('Error broadcasting analytics:', error);
     }
+};
+
+// Notification broadcasting function
+const broadcastNotification = (userId, notification) => {
+    io.to(`user-${userId}`).emit('notification', notification);
 };
 
 // Schedule real-time updates every 30 seconds
@@ -184,8 +195,24 @@ const limiter = rateLimit({
     legacyHeaders: false,
 });
 
+const authRateLimit = rateLimit({
+    windowMs: 15 * 60 * 1000,
+    max: 10,
+    message: 'Too many authentication attempts, please try again later.',
+    standardHeaders: true,
+    legacyHeaders: false,
+});
+
+const loginRateLimit = rateLimit({
+    windowMs: 15 * 60 * 1000,
+    max: 5,
+    message: 'Too many login attempts, please try again later.',
+    standardHeaders: true,
+    legacyHeaders: false,
+});
+
 app.use('/api/', limiter);
-app.use('/api/auth', authRateLimit, authRoutes);
+app.use('/api/auth', authRateLimit);
 app.use('/api/login', loginRateLimit);
 
 app.use(express.json({ limit: '10mb' }));
@@ -195,8 +222,57 @@ app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 app.use('/uploads', express.static('uploads'));
 
 // Authentication middleware
+const authMiddleware = async (req, res, next) => {
+    const authHeader = req.headers.authorization;
+    if (!authHeader || !authHeader.startsWith('Bearer ')) { 
+        return res.status(401).send('Unauthorized: No token provided.'); 
+    }
+    
+    const idToken = authHeader.split('Bearer ')[1];
+    try {
+        const decodedToken = await admin.auth().verifyIdToken(idToken);
+        
+        const upsertSql = `INSERT INTO "users" (uid, email, role, status) VALUES ($1, $2, 'staff', 'active') ON CONFLICT (uid) DO NOTHING;`;
+        await db.query(upsertSql, [decodedToken.uid, decodedToken.email]);
+        
+        const selectSql = `SELECT * FROM "users" WHERE uid = $1`;
+        const { rows } = await db.query(selectSql, [decodedToken.uid]);
+        
+        if (rows.length === 0) {
+            return res.status(500).send("Error: Could not retrieve user profile.");
+        }
+        
+        const user = rows[0];
+        if (user.status === 'inactive') {
+            return res.status(403).send('Forbidden: Your account has been disabled.');
+        }
+        
+        req.user = { ...decodedToken, role: user.role, status: user.status };
+        next();
+    } catch (error) {
+        console.error('Auth middleware error:', error);
+        res.status(403).send('Unauthorized: Invalid token or server error.');
+    }
+};
+
+const adminOnly = (req, res, next) => {
+    if (req.user && (req.user.role === 'primary_admin' || req.user.role === 'secondary_admin')) { 
+        next(); 
+    } else { 
+        res.status(403).send('Forbidden: Admins only.'); 
+    }
+};
+
+const adminOrSecondaryAdmin = (req, res, next) => {
+    if (req.user && (req.user.role === 'primary_admin' || req.user.role === 'secondary_admin')) { 
+        next(); 
+    } else { 
+        res.status(403).send('Forbidden: Admin access required.'); 
+    }
+};
+
 // Apply auth middleware to protected routes
-app.use('/api/transactions', transactionRoutes);
+app.use('/api/transactions', authMiddleware);
 app.use('/api/employees', authMiddleware);
 app.use('/api/users', authMiddleware, adminOnly);
 app.use('/api/rota', authMiddleware);
@@ -210,14 +286,164 @@ app.use('/api/shift-templates', authMiddleware);
 app.use('/api/approval-requests', authMiddleware, adminOrSecondaryAdmin);
 app.use('/api/time-entries', authMiddleware, adminOrSecondaryAdmin);
 app.use('/api/activity-logs', authMiddleware, adminOnly);
-app.use('/api/analytics', authMiddleware, analyticsRoutes);
-app.use('/api/notifications', authMiddleware, notificationRoutes);
+app.use('/api/analytics', authMiddleware);
+app.use('/api/notifications', authMiddleware);
 app.use('/api/settings', authMiddleware);
 app.use('/api/inventory', authMiddleware);
 app.use('/api/categories', authMiddleware);
 app.use('/api/products', authMiddleware);
 
 // Activity logging function
+const logActivity = async (user, actionType, details = '', req = null) => {
+    if (!user || !user.uid || !user.email) {
+        console.error('logActivity: Invalid user object provided');
+        return;
+    }
+
+    try {
+        const sql = `
+            INSERT INTO activity_logs (user_uid, user_email, action_type, details, ip_address, user_agent) 
+            VALUES ($1, $2, $3, $4, $5, $6)
+        `;
+        
+        const ipAddress = req ? (req.ip || req.connection?.remoteAddress || req.headers?.['x-forwarded-for']) : null;
+        const userAgent = req ? req.get('User-Agent') : null;
+        
+        await db.query(sql, [
+            user.uid, 
+            user.email, 
+            actionType, 
+            details || '', 
+            ipAddress, 
+            userAgent
+        ]);
+        
+        console.log(`✅ Activity logged: ${actionType} by ${user.email}`);
+    } catch (err) {
+        console.error("❌ Failed to log activity:", {
+            error: err.message,
+            user: user.email,
+            action: actionType
+        });
+        // Don't throw - just log the error
+    }
+};
+
+
+// Notification creation function
+const createNotification = async (userId, title, message, type = 'info', actionUrl = null) => {
+    try {
+        const sql = `
+            INSERT INTO notifications (user_uid, title, message, type, action_url) 
+            VALUES ($1, $2, $3, $4, $5) 
+            RETURNING *
+        `;
+        const { rows } = await db.query(sql, [userId, title, message, type, actionUrl]);
+        
+        // Broadcast real-time notification
+        broadcastNotification(userId, rows[0]);
+        
+        return rows[0];
+    } catch (error) {
+        console.error('Error creating notification:', error);
+    }
+};
+
+// Validation functions
+const validateTransaction = (req, res, next) => {
+    const { description, amount, type, category } = req.body;
+    const errors = [];
+
+    if (!description || description.trim().length === 0) {
+        errors.push("Description is required");
+    } else if (description.trim().length < 2) {
+        errors.push("Description must be at least 2 characters");
+    }
+
+    if (!amount) {
+        errors.push("Amount is required");
+    } else {
+        const parsedAmount = parseFloat(amount);
+        if (isNaN(parsedAmount) || parsedAmount <= 0) {
+            errors.push("Amount must be a positive number");
+        } else if (parsedAmount > 999999.99) {
+            errors.push("Amount cannot exceed £999,999.99");
+        }
+    }
+
+    if (!['sale', 'expense'].includes(type)) {
+        errors.push("Type must be either 'sale' or 'expense'");
+    }
+
+    if (errors.length > 0) {
+        return res.status(400).json({ errors, valid: false });
+    }
+
+    next();
+};
+
+const validateId = (req, res, next) => {
+    const id = req.params.id;
+    if (!id || isNaN(parseInt(id))) {
+        return res.status(400).json({ error: "Valid ID is required" });
+    }
+    next();
+};
+
+const validateDateQuery = (req, res, next) => {
+    const { date, limit, offset } = req.query;
+    
+    if (date && !/^\d{4}-\d{2}-\d{2}$/.test(date)) {
+        return res.status(400).json({ error: "Invalid date format. Use YYYY-MM-DD" });
+    }
+    
+    if (limit && (isNaN(parseInt(limit)) || parseInt(limit) < 1 || parseInt(limit) > 100)) {
+        return res.status(400).json({ error: "Limit must be between 1 and 100" });
+    }
+    
+    if (offset && (isNaN(parseInt(offset)) || parseInt(offset) < 0)) {
+        return res.status(400).json({ error: "Offset must be non-negative" });
+    }
+    
+    next();
+};
+
+const validateShiftTemplate = (req, res, next) => {
+    const { name, start_time, duration_minutes } = req.body;
+    const errors = [];
+
+    if (!name || name.trim().length === 0) {
+        errors.push("Name is required");
+    } else if (name.trim().length < 2) {
+        errors.push("Name must be at least 2 characters");
+    } else if (name.trim().length > 50) {
+        errors.push("Name cannot exceed 50 characters");
+    }
+
+    if (!start_time) {
+        errors.push("Start time is required");
+    } else if (!/^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$/.test(start_time)) {
+        errors.push("Start time must be in HH:MM format");
+    }
+
+    if (!duration_minutes) {
+        errors.push("Duration is required");
+    } else {
+        const duration = parseInt(duration_minutes);
+        if (isNaN(duration) || duration <= 0) {
+            errors.push("Duration must be a positive number");
+        } else if (duration > 1440) {
+            errors.push("Duration cannot exceed 24 hours");
+        }
+    }
+
+    if (errors.length > 0) {
+        return res.status(400).json({ errors, valid: false });
+    }
+
+    next();
+};
+
 // Add this shared function for generating labor vs sales reports
 const generateLaborVsSalesReport = async (startDate, endDate) => {
     try {
@@ -382,6 +608,40 @@ app.get('/api/me', (req, res) => {
         role: req.user.role, 
         status: req.user.status 
     });
+});
+
+// =============================================================================
+// ANALYTICS API ROUTES
+// =============================================================================
+
+app.get('/api/analytics/real-time', async (req, res) => {
+    try {
+        const metrics = await analyticsService.getRealTimeSalesMetrics();
+        res.json({ data: metrics });
+    } catch (error) {
+        console.error('Error fetching real-time analytics:', error);
+        res.status(500).json({ error: 'Failed to fetch analytics' });
+    }
+});
+
+app.get('/api/analytics/forecast', adminOrSecondaryAdmin, async (req, res) => {
+    try {
+        const forecast = await analyticsService.getSalesForecast();
+        res.json({ data: forecast });
+    } catch (error) {
+        console.error('Error fetching sales forecast:', error);
+        res.status(500).json({ error: 'Failed to fetch forecast' });
+    }
+});
+
+app.get('/api/analytics/peak-hours', adminOrSecondaryAdmin, async (req, res) => {
+    try {
+        const peakHours = await analyticsService.getPeakHoursAnalysis();
+        res.json({ data: peakHours });
+    } catch (error) {
+        console.error('Error fetching peak hours analysis:', error);
+        res.status(500).json({ error: 'Failed to fetch peak hours analysis' });
+    }
 });
 
 // =============================================================================
@@ -3682,6 +3942,100 @@ app.get('/api/activity-logs', async (req, res) => {
     } catch (err) {
         console.error("Error fetching activity logs:", err);
         res.status(500).json({ error: "Failed to fetch activity logs." });
+    }
+});
+
+// =============================================================================
+// NOTIFICATIONS API
+// =============================================================================
+
+app.get('/api/notifications', async (req, res) => {
+    try {
+        const { is_read, limit = 50, offset = 0 } = req.query;
+        
+        let sql = `
+            SELECT * FROM notifications 
+            WHERE user_uid = $1 
+            AND (expires_at IS NULL OR expires_at > NOW())
+        `;
+        let params = [req.user.uid];
+        let paramCount = 1;
+        
+        if (is_read !== undefined) {
+            sql += ` AND is_read = $${++paramCount}`;
+            params.push(is_read === 'true');
+        }
+        
+        sql += ` ORDER BY created_at DESC LIMIT $${++paramCount} OFFSET $${++paramCount}`;
+        params.push(parseInt(limit), parseInt(offset));
+        
+        const { rows } = await db.query(sql, params);
+        res.json({ data: rows });
+    } catch (err) {
+        console.error("Error fetching notifications:", err);
+        res.status(500).json({ error: "Failed to fetch notifications." });
+    }
+});
+
+app.put('/api/notifications/:id/read', validateId, async (req, res) => {
+    const notificationId = req.params.id;
+
+    try {
+        const sql = `
+            UPDATE notifications 
+            SET is_read = true 
+            WHERE id = $1 AND user_uid = $2 
+            RETURNING *
+        `;
+        const { rows } = await db.query(sql, [notificationId, req.user.uid]);
+        
+        if (rows.length === 0) {
+            return res.status(404).json({ error: "Notification not found." });
+        }
+        
+        res.json({ data: rows[0] });
+    } catch (err) {
+        console.error("Error marking notification as read:", err);
+        res.status(500).json({ error: "Failed to mark notification as read." });
+    }
+});
+
+app.put('/api/notifications/mark-all-read', async (req, res) => {
+    try {
+        const sql = `
+            UPDATE notifications 
+            SET is_read = true 
+            WHERE user_uid = $1 AND is_read = false
+            RETURNING COUNT(*) as updated_count
+        `;
+        const { rows } = await db.query(sql, [req.user.uid]);
+        
+        res.json({ message: "All notifications marked as read", count: rows.length });
+    } catch (err) {
+        console.error("Error marking all notifications as read:", err);
+        res.status(500).json({ error: "Failed to mark all notifications as read." });
+    }
+});
+
+app.delete('/api/notifications/:id', validateId, async (req, res) => {
+    const notificationId = req.params.id;
+
+    try {
+        const sql = `
+            DELETE FROM notifications 
+            WHERE id = $1 AND user_uid = $2 
+            RETURNING *
+        `;
+        const { rows } = await db.query(sql, [notificationId, req.user.uid]);
+        
+        if (rows.length === 0) {
+            return res.status(404).json({ error: "Notification not found." });
+        }
+        
+        res.json({ message: "Notification deleted successfully" });
+    } catch (err) {
+        console.error("Error deleting notification:", err);
+        res.status(500).json({ error: "Failed to delete notification." });
     }
 });
 
