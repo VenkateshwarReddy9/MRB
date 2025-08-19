@@ -792,32 +792,39 @@ function App() {
         const unsubscribe = onAuthStateChanged(auth, (firebaseUser) => {
             if (firebaseUser) {
                 firebaseUser.getIdToken().then(token => {
-                    fetch(`${API_BASE_URL}/api/me`, { 
-                        headers: { 'Authorization': `Bearer ${token}` } 
+                    fetch(`${API_BASE_URL}/api/me`, {
+                        headers: { 'Authorization': `Bearer ${token}` }
                     })
                     .then(res => {
+                        if (res.status === 429) {
+                            throw new Error('Too many requests');
+                        }
                         if (!res.ok) {
                             throw new Error(`HTTP ${res.status}: ${res.statusText}`);
                         }
                         return res.json();
                     })
                     .then(profileData => {
-                        if (profileData.uid) { 
+                        if (profileData.uid) {
                             setUserProfile(profileData);
                             setAuthError('');
-                        } else { 
-                            signOut(auth); 
+                        } else {
                             setUserProfile(null);
                             setAuthError('Invalid user profile');
+                            signOut(auth);
                         }
                         setLoading(false);
                     })
-                    .catch(error => { 
+                    .catch(error => {
                         console.error('Profile fetch error:', error);
-                        setAuthError('Failed to load user profile');
-                        signOut(auth); 
-                        setUserProfile(null); 
-                        setLoading(false); 
+                        if (error.message === 'Too many requests') {
+                            setAuthError('Too many requests - please try again later.');
+                        } else {
+                            setAuthError('Failed to load user profile');
+                            signOut(auth);
+                        }
+                        setUserProfile(null);
+                        setLoading(false);
                     });
                 }).catch(error => {
                     console.error('Token error:', error);
