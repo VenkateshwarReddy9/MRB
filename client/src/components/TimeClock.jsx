@@ -91,11 +91,11 @@ const TimeClock = () => {
         setLoading(true);
         try {
             const token = await auth.currentUser.getIdToken();
-            const response = await fetch('${API_URL}/api/time-clock/status', {
-                headers: { 
-        'Authorization': `Bearer ${token}`,
-        'Content-Type': 'application/json'
-    }
+            const response = await fetch(`${API_URL}/api/time-clock/status`, {
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json'
+                }
             });
             
             if (!response.ok) {
@@ -149,11 +149,11 @@ const TimeClock = () => {
         
         try {
             const token = await auth.currentUser.getIdToken();
-            const response = await fetch('${API_URL}/api/time-clock/clock-in', {
+            const response = await fetch(`${API_URL}/api/time-clock/clock-in`, {
                 method: 'POST',
-                headers: { 
+                headers: {
                     'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${token}` 
+                    'Authorization': `Bearer ${token}`
                 },
                 body: JSON.stringify({
                     notes: null,
@@ -186,11 +186,11 @@ const TimeClock = () => {
         
         try {
             const token = await auth.currentUser.getIdToken();
-            const response = await fetch('${API_URL}/api/time-clock/clock-out',  {
+            const response = await fetch(`${API_URL}/api/time-clock/clock-out`,  {
                 method: 'POST',
-                headers: { 
+                headers: {
                     'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${token}` 
+                    'Authorization': `Bearer ${token}`
                 },
                 body: JSON.stringify({
                     notes: null
@@ -222,11 +222,11 @@ const TimeClock = () => {
         
         try {
             const token = await auth.currentUser.getIdToken();
-            const response = await fetch('${API_URL}/api/time-clock/break-start', {
+            const response = await fetch(`${API_URL}/api/time-clock/break-start`, {
                 method: 'POST',
-                headers: { 
+                headers: {
                     'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${token}` 
+                    'Authorization': `Bearer ${token}`
                 }
             });
             
@@ -255,11 +255,11 @@ const TimeClock = () => {
         
         try {
             const token = await auth.currentUser.getIdToken();
-            const response = await fetch('${API_URL}/api/time-clock/break-end', {
+            const response = await fetch(`${API_URL}/api/time-clock/break-end`, {
                 method: 'POST',
-                headers: { 
+                headers: {
                     'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${token}` 
+                    'Authorization': `Bearer ${token}`
                 }
             });
             
