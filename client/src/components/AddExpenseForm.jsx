@@ -4,8 +4,7 @@ import React, { useState, useEffect } from 'react';
 import { auth } from '../firebase';
 
 // Environment-based API configuration
-// Fallback to local server if the environment variable is undefined
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
+const API_BASE_URL = import.meta.env.VITE_API_URL ;
 
 const AddExpenseForm = ({ onNewExpense, transactionToEdit, onUpdate, onCancelEdit }) => {
     const [description, setDescription] = useState('');
